@@ -45,8 +45,3 @@ class ProcessBuilder
 class Files
 class Path
 
-JavaBuild ..> JavaCompiler : compila
-JavaBuild ..> ToolProvider : obtiene compilador
-Runner    ..> ProcessBuilder : ejecuta proceso
-Transpiler ..> Files : escribe
-Transpiler ..> Path  : ruta de archivo
