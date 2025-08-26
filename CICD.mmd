@@ -3,14 +3,14 @@ flowchart TD
   %% Sección: Build local
   %% =========================
   subgraph Dev["Máquina de Desarrollo"]
-    A[our.java\ncódigo fuente (Java 23)]
-    DF[Dockerfile\nmulti-stage: build + run]
+    A["our.java\ncódigo fuente (Java 23)"]
+    DF["Dockerfile\nmulti-stage: build + run"]
 
     A --> DF
 
     subgraph BuildStage["Stage 1: build"]
-      B1[javac\ncompila a .class]
-      B2[jar --create --main-class\nempaqueta JAR ejecutable]
+      B1["javac\ncompila a .class"]
+      B2["jar --create --main-class\nempaqueta JAR ejecutable"]
       B1 --> B2
     end
 
@@ -19,7 +19,7 @@ flowchart TD
   end
 
   %% Imagen de Docker y Push
-  JAR --> C[docker build\ncrea imagen con JAR]
+  JAR --> C["docker build\ncrea imagen con JAR"]
   C --> IMG[(Docker Image)]
   IMG -->|docker push| DHUB[("Docker Hub\nregistro de imágenes")]
 
@@ -30,14 +30,14 @@ flowchart TD
     direction TB
 
     subgraph RP["Nginx Reverse Proxy (host)"]
-      NGINX[Nginx]
-      CERT[Certbot / Let's Encrypt\nSSL/TLS]
-      CERT -. gestiona certificados .- NGINX
+      NGINX["Nginx"]
+      CERT["Certbot / Let's Encrypt\nSSL/TLS"]
+      CERT -. "gestiona certificados" .- NGINX
     end
 
     subgraph SWARM["Docker Swarm (1 manager)"]
-      NET[Overlay/Ingress interno]
-      SVC[Servicio/Stack\ncontenedor ejecutando app.jar]
+      NET["Overlay/Ingress interno"]
+      SVC["Servicio/Stack\ncontenedor ejecutando app.jar"]
       NET --- SVC
     end
 
@@ -52,12 +52,11 @@ flowchart TD
   %% =========================
   %% Flujo de Usuario
   %% =========================
-  USER[Usuario/Cliente]
+  USER["Usuario/Cliente"]
   INTERNET[(Internet)]
   USER --> INTERNET -->|HTTPS :443| NGINX
   NGINX -->|HTTP interno| SVC
 
   %% Notas/Relaciones
-  %% (No enlazamos directamente al subgraph; usamos nodos internos)
-  DF -. define .-> B1
-  IMG -. contiene .-> JAR
+  DF -. "define" .-> B1
+  IMG -. "contiene" .-> JAR
