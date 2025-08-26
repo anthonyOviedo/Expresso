@@ -10,18 +10,18 @@ flowchart TD
     A["Expresso.java (Java 23)"]
     DF["docker buil ./dockerfile "]
 
-    A-.COPIES.->B3
+    A-.COPIES.->JAVAB
 
     DF --> Docker
 
     subgraph Docker["DockerFile def"]
       subgraph BuildStage["Stage 1: build"]
-        B3[" javac .java"]
+        JAVAB[" javac .java"]
         JAR2[(app.jar)]
       end
 
       subgraph RunStage2["Stage 2: Run"]
-        B3 -->|genera| JAR2[(app.jar)]
+        JAVAB -->|genera| JAR2[(app.jar)]
         JAR[(app.jar)]
         G["Configura e instala el app.jar"]
       end
