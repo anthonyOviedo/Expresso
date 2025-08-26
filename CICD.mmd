@@ -2,61 +2,43 @@ flowchart TD
   %% =========================
   %% Sección: Build local
   %% =========================
-  subgraph Dev["Máquina de Desarrollo"]
-    A["our.java\ncódigo fuente (Java 23)"]
-    DF["Dockerfile\nmulti-stage: build + run"]
+      Desarrollador -. "EJECUTA" .-> DF
 
-    A --> DF
+  subgraph Dev["Máquina de Desarrollo"]
+    A["Expresso.java (Java 23)"]
+    DF["docker buil ./dockerfile "]
+
+    A-.COPIES.->B3
+
+    DF --> Docker
+
+    subgraph Docker["DockerFile def"]
+
 
     subgraph BuildStage["Stage 1: build"]
+      B3[".java"]
+      B3-->B1
       B1["javac\ncompila a .class"]
-      B2["jar --create --main-class\nempaqueta JAR ejecutable"]
-      B1 --> B2
+      B2(["javac\ncompila a .jar"])
+      B1 -. "builds" .-> B2
+      JAR2[(app.jar)]
     end
 
-    DF --> B1
-    B2 -->|artefacto| JAR[(app.jar)]
-  end
+    subgraph RunStage2["Stage 2: Run"]
+      B2 -->|genera| JAR2[(app.jar)]
+      JAR[(app.jar)]
+      G["Configura e instala el app.jar"]
+    end
+    JAR-->G
+    end
 
+    JAR2-.COPIES.->JAR
+
+  RunStage2 -.CREATES.->IMG[(docker image)]
   %% Imagen de Docker y Push
-  JAR --> C["docker build\ncrea imagen con JAR"]
-  C --> IMG[(Docker Image)]
-  IMG -->|docker push| DHUB[("Docker Hub\nregistro de imágenes")]
-
-  %% =========================
-  %% Sección: Infraestructura
-  %% =========================
-  subgraph HETZ["Servidor Hetzner (único nodo)"]
-    direction TB
-
-    subgraph RP["Nginx Reverse Proxy (host)"]
-      NGINX["Nginx"]
-      CERT["Certbot / Let's Encrypt\nSSL/TLS"]
-      CERT -. "gestiona certificados" .- NGINX
-    end
-
-    subgraph SWARM["Docker Swarm (1 manager)"]
-      NET["Overlay/Ingress interno"]
-      SVC["Servicio/Stack\ncontenedor ejecutando app.jar"]
-      NET --- SVC
-    end
-
-    PULL["docker service update/create\npull desde Docker Hub"]
   end
+  IMG -.UPLOADS.-> DHUB[("Docker Hub\nregistro de imágenes")]
 
-  %% Relaciones entre bloques de infra
-  DHUB -->|pull| PULL
-  PULL --> SVC
-  NGINX -->|proxy_pass| SVC
-
-  %% =========================
-  %% Flujo de Usuario
-  %% =========================
-  USER["Usuario/Cliente"]
-  INTERNET[(Internet)]
-  USER --> INTERNET -->|HTTPS :443| NGINX
-  NGINX -->|HTTP interno| SVC
 
   %% Notas/Relaciones
-  DF -. "define" .-> B1
-  IMG -. "contiene" .-> JAR
+
