@@ -1,0 +1,55 @@
+flowchart TD
+    %% =========================
+    %% Sección: Build local
+    %% =========================
+    subgraph Dev["Máquina de Desarrollo"]
+      A[our.java<br/><small>código fuente (Java 23)</small>]
+      DF[Dockerfile<br/><small>multi-stage: build & run</small>]
+      A --> DF
+      subgraph BuildStage["Stage 1: build"]
+        B1[javac<br/><small>compila a .class</small>]
+        B2[jar --create --main-class<br/><small>empaqueta JAR ejecutable</small>]
+        B1 --> B2
+      end
+      DF --> B1
+      B2 -->|artefacto| JAR[(app.jar)]
+    end
+
+    %% Imagen de Docker y Push
+    JAR --> C[docker build<br/><small>crea imagen con JAR</small>]
+    C --> IMG[(Docker Image)]
+    IMG -->|docker push| DHUB[("Docker Hub<br/><small>registro de imágenes</small>")]
+
+    %% =========================
+    %% Sección: Infraestructura
+    %% =========================
+    subgraph HETZ["Servidor Hetzner (único nodo)"]
+      direction TB
+      subgraph RP["Nginx Reverse Proxy (host)"]
+        NGINX[Nginx]
+        CERT[Certbot/Let's Encrypt<br/><small>SSL/TLS</small>]
+        CERT -. gestiona certificados .- NGINX
+      end
+
+      subgraph SWARM["Docker Swarm (1 manager)"]
+        NET[Overlay/Ingress interno]
+        SVC[Servicio/Stack<br/><small>contenedor ejecutando app.jar</small>]
+        NET --- SVC
+      end
+
+      PULL["docker service update/create<br/><small>pull desde Docker Hub</small>"]
+      DHUB -->|pull| PULL --> SVC
+      NGINX -->|proxy_pass| SVC
+    end
+
+    %% =========================
+    %% Flujo de Usuario
+    %% =========================
+    USER[Usuario/Cliente]
+    INTERNET[(Internet)]
+    USER --> INTERNET -->|HTTPS :443| NGINX
+    NGINX ==> |HTTP interno| SVC
+
+    %% Notas/Relaciones
+    DF -. define .-> BuildStage
+    IMG -. contiene .-> JAR
