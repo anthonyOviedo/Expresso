@@ -2,38 +2,57 @@ classDiagram
 %% =======================
 %% Paquetes / namespaces
 %% =======================
-namespace expresso.cli {
+
+namespace expresso{
   class Expressor {
     +main(String[] args) void
   }
 }
 
-namespace expresso.transpiler {
+namespace expresso.Cli {
+  class Cli {
+    +cli(... "options") void
+    +loadFile(String fileName) bool
+    +transpileCommand(File f) void
+    +buildCommand(File f) void
+    +runCommand(File f) void
+  }
+}
+
+
+namespace expresso.Transpiler {
   class Transpiler {
     +transpile(String expressoFile) void
+    +write(File f) void
   }
 }
 
-namespace expresso.compiler {
-  class JavaBuild {
-    +build(String expressoFile) void
+namespace expresso.Builder {
+  class Builder {
+    +build(File f) bool
+    +write(File f) bool
   }
 }
 
-namespace expresso.runtime {
+namespace expresso.Runtime {
   class Runner {
+    +invoke(Transpiler transpile) void
+    +invoke(Builder builder) void
+    +invoke(Transpiler transpile) void
     +run(String expressoFile) void
+    +display(String expressoFile) void
   }
 }
 
 %% =======================
 %% Relaciones internas
 %% =======================
-Expressor ..> Transpiler : usa
-Expressor ..> JavaBuild  : usa
-Expressor ..> Runner     : orquesta
+Expressor ..> Cli : usa
+Cli ..> Transpiler : usa
+Cli ..> Builder  : usa
+Cli ..> Runner     : orquesta
 
-JavaBuild ..> Transpiler : invoca
-Runner    ..> JavaBuild  : invoca
+Builder ..> Transpiler : invoca
+Runner    ..> Builder  : invoca
 
 
