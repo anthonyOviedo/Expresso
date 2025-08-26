@@ -3,6 +3,8 @@ flowchart TD
   %% Sección: Build local
   %% =========================
       Desarrollador -. "EJECUTA" .-> DF
+      Desarrollador -. "EJECUTA" .-> CM
+      
 
   subgraph Dev["Máquina de Desarrollo"]
     A["Expresso.java (Java 23)"]
@@ -34,10 +36,12 @@ flowchart TD
 
     JAR2-.COPIES.->JAR
 
-  RunStage2 -.CREATES.->IMG[(docker image)]
+   Docker-.CREATES.->IMG[(docker image)]
+    IMG-->CM[docker push]
+
   %% Imagen de Docker y Push
   end
-  IMG -.UPLOADS.-> DHUB[("Docker Hub\nregistro de imágenes")]
+   CM-.UPLOADS.-> DHUB[("Docker Hub\nregistro de imágenes")]
 
 
   %% Notas/Relaciones
