@@ -15,23 +15,17 @@ flowchart TD
     DF --> Docker
 
     subgraph Docker["DockerFile def"]
+      subgraph BuildStage["Stage 1: build"]
+        B3[" javac .java"]
+        JAR2[(app.jar)]
+      end
 
-
-    subgraph BuildStage["Stage 1: build"]
-      B3[".java"]
-      B3-->B1
-      B1["javac\ncompila a .class"]
-      B2(["javac\ncompila a .jar"])
-      B1 -. "builds" .-> B2
-      JAR2[(app.jar)]
-    end
-
-    subgraph RunStage2["Stage 2: Run"]
-      B2 -->|genera| JAR2[(app.jar)]
-      JAR[(app.jar)]
-      G["Configura e instala el app.jar"]
-    end
-    JAR-->G
+      subgraph RunStage2["Stage 2: Run"]
+        B3 -->|genera| JAR2[(app.jar)]
+        JAR[(app.jar)]
+        G["Configura e instala el app.jar"]
+      end
+      JAR-->G
     end
 
     JAR2-.COPIES.->JAR
