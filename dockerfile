@@ -3,7 +3,7 @@ FROM eclipse-temurin:23-jdk AS build
 
 WORKDIR /src
 # Copy source
-COPY HelloWorld.java .
+COPY src/HelloWorld.java .
 
 # Compile and package into a runnable JAR with Main-Class set
 RUN javac HelloWorld.java \
