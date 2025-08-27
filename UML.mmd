@@ -23,19 +23,19 @@ namespace expresso.Cli {
 
 namespace expresso.Transpiler {
   class Transpiler {
-    +transpile(File expressoFile) File
+    +transpile(File .expresso) File .java
   }
 }
 
 namespace expresso.Builder {
   class Builder {
-    +build(File f) File
+    +build(File .java) File .class
   }
 }
 
 namespace expresso.Runtime {
   class Runner {
-    +run(File expressoFile) String
+    +run(File .class) String
   }
 }
 
