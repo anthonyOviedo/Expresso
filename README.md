@@ -1,3 +1,5 @@
+test
+
 # Expresso — Transpilador a Java 23
 Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**  
 > Proyecto ágil: sujeto a refinamientos y cambios conforme avance el curso.
@@ -172,3 +174,21 @@ Con **Gradle**:
 1. Abrir *issue* con descripción y criterios de aceptación.
 2. Rama por feature, *PR* con *checks* verdes y evidencias de prueba.
 3. Revisión por pares dentro del equipo. **No** se aceptan *PRs* de terceros.
+
+
+---
+
+## 📧 Contacto
+- **Autor del SPEC**: Carlos Loría‑Sáenz — <loriacarlos@gmail.com> (según documento). fileciteturn0file0
+
+---
+
+## 🧾 Licencia
+Defina la licencia del **repositorio del equipo** según las políticas del curso (por defecto, privado/educativo).
+
+---
+
+> **Créditos y fuente**: Este README condensa el documento **“SPEC de Expresso: Un minilenguaje muy concentrado (19/08/2025 v0)”**.  
+- filecite
+- turn0file0
+

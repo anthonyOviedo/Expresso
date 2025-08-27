@@ -1,0 +1,42 @@
+flowchart TD
+  %% =========================
+  %% Sección: Build local
+  %% =========================
+      Desarrollador -. "EJECUTA" .-> DF
+      Desarrollador -. "EJECUTA" .-> CM
+      
+
+  subgraph Dev["Máquina de Desarrollo"]
+    A["Expresso.java (Java 23)"]
+    DF["docker buil ./dockerfile "]
+
+    A-.COPIES.->JAVAB
+
+    DF --> Docker
+
+    subgraph Docker["DockerFile def"]
+      subgraph BuildStage["Stage 1: build"]
+        JAVAB[" javac .java"]
+        JAR2[(app.jar)]
+      end
+
+      subgraph RunStage2["Stage 2: Run"]
+        JAVAB -->|genera| JAR2[(app.jar)]
+        JAR[(app.jar)]
+        G["Configura e instala el app.jar"]
+      end
+      JAR-->G
+    end
+
+    JAR2-.COPIES.->JAR
+
+   Docker-.CREATES.->IMG[(docker image)]
+    IMG-->CM[docker push]
+
+  %% Imagen de Docker y Push
+  end
+   CM-.UPLOADS.-> DHUB[("Docker Hub\nregistro de imágenes")]
+
+
+  %% Notas/Relaciones
+
