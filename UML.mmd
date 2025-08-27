@@ -12,7 +12,8 @@ namespace expresso{
 namespace expresso.Cli {
   class Cli {
     +cli(... "options") void
-    +loadFile(String fileName) bool
+    +loadFile(String fileName) File
+    +writeFile(File f) bool
     +transpileCommand(File f) void
     +buildCommand(File f) void
     +runCommand(File f) void
@@ -22,22 +23,19 @@ namespace expresso.Cli {
 
 namespace expresso.Transpiler {
   class Transpiler {
-    +transpile(String expressoFile) void
-    +write(File f) void
+    +transpile(File expressoFile) File
   }
 }
 
 namespace expresso.Builder {
   class Builder {
-    +build(File f) bool
-    +write(File f) bool
+    +build(File f) File
   }
 }
 
 namespace expresso.Runtime {
   class Runner {
-    +run(File expressoFile) void
-    +display(String expressoOutput) String
+    +run(File expressoFile) String
   }
 }
 
