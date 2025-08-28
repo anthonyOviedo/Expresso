@@ -12,8 +12,10 @@ public class Runner {
         
         try {
             String className = toClassName.apply(classFile.getName());
-            System.out.println("Ejecutando clase: " + className);
+            System.out.println("Ejecutando la clase: " + className);
             
+            
+
             ProcessBuilder processBuilder = new ProcessBuilder("java", className);
             processBuilder.inheritIO(); 
             Process process = processBuilder.start();
@@ -21,7 +23,7 @@ public class Runner {
             
             return "Ejecucion completada.";
         } catch (Exception e) {
-            return "Error Ejecucion No Completada." + e.getMessage();
+            return "Error. Ejecucion No Completada." + e.getMessage();
         }
     }
 }
