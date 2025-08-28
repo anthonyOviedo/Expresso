@@ -3,8 +3,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Runner {
-
-   
     public static String run(String expressoFile) {
         Function<String, String> toClassName =
                 file -> file.replace(".expresso", "");
