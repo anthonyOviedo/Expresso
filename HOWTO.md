@@ -50,6 +50,9 @@ cd ~/proyectos/Expresso
 # empaqueta con maven
 mvn -q -DskipTests package
 
+# crear directorios para el symlink
+mkdir -p /home/USER/.local/lib/
+
 # crea/actualiza el symlink: ~/.local/lib/expressor.jar -> target/expresso-*-runner.jar
 ln -sf "$(readlink -f target/expresso-0.1.0-runner.jar)" ~/.local/lib/expressor.jar
 
@@ -59,5 +62,5 @@ echo "alias expressor='java -jar ~/.local/lib/expressor.jar'" >> ~/.bashrc
 # recarga la sesión para tener el alias disponible ahora
 source ~/.bashrc
 
-# ejecuto el comando 
-expressor --help 
+# ejecuto el comando
+expressor --help
