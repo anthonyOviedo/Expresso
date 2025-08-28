@@ -1,22 +1,26 @@
 
+
+import java.io.File;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class Runner {
-    public static String run(String expressoFile) {
+    
+    public static String run(File classFile) {
         Function<String, String> toClassName =
-                file -> file.replace(".expresso", "");
-
-        Supplier<ProcessBuilder> processSupplier =
-                () -> new ProcessBuilder("java", toClassName.apply(expressoFile))
-                        .inheritIO();
-
+                file -> file.replace(".class", "");
+        
         try {
-            Process process = processSupplier.get().start();
+            String className = toClassName.apply(classFile.getName());
+            System.out.println("Ejecutando clase: " + className);
+            
+            ProcessBuilder processBuilder = new ProcessBuilder("java", className);
+            processBuilder.inheritIO(); 
+            Process process = processBuilder.start();
             process.waitFor();
-            return "Ejecución completada.";
+            
+            return "Ejecucion completada.";
         } catch (Exception e) {
-            return "Error en ejecución: " + e.getMessage();
+            return "Error Ejecucion No Completada." + e.getMessage();
         }
     }
 }
