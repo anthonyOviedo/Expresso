@@ -1,6 +1,6 @@
 package com.diezam04.expresso;
 
-public class Transpilador{
+public class Transpiler{
     public static String run(String expressoFile) {
         try {
             System.out.println("Transpilacion completada.");
