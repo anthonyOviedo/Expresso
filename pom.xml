@@ -10,7 +10,6 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- Usa tu JDK 23 -->
     <maven.compiler.release>23</maven.compiler.release>
     <picocli.version>4.7.6</picocli.version>
   </properties>
@@ -25,6 +24,16 @@
 
   <build>
     <plugins>
+      <!-- Compilar con JDK 23 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+        <configuration>
+          <release>23</release>
+        </configuration>
+      </plugin>
+
       <!-- Ejecutar sin jar: mvn exec:java -Dexec.args="..." -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
