@@ -1,2 +1,6 @@
 target
 dependency-reduced-pom.xml
+.vscode/launch.json
+.gitignore
+helloworld.java
+helloworld.class
