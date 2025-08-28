@@ -2,7 +2,7 @@ name: Build JAR and package .deb
 
 on:
   push:
-    branches: [ main ]
+    branches: [ 34-crear-java-image ]
   pull_request:
 
 env:
