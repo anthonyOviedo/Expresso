@@ -4,10 +4,9 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
-import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 
 
 @Command(name = "expressor", mixinStandardHelpOptions = true,
@@ -22,44 +21,54 @@ public class Expressor implements Runnable {
 
     @Override
     public void run() {
-        // If no subcommand is given, show usage
         CommandLine.usage(this, System.out);
     }
     
-    public void writeFile(File source,String file, String extension) {
-        // Crear un nuevo archivo con la extensión indicada
-        String fileName = source.getName();
-        if (!fileName.endsWith("." + extension)) {
-            fileName = fileName + "." + extension;
-        }
-
-        File newFile = new File(source.getParent(), fileName);
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(newFile))) {
-            // Aquí puedes poner el contenido que quieras escribir
-            writer.write("Este es un archivo generado con extensión: " + extension);
-            writer.newLine();
-            writer.write("Ruta absoluta: " + newFile.getAbsolutePath());
-            writer.newLine();
-            writer.write("¡Archivo escrito correctamente!");
-            System.out.println("Archivo creado: " + newFile.getAbsolutePath());
+    public Integer writeFile(java.io.File source,String fileContent, String extension) {  
+        String fileName = source.getName().split("\\.")[0]; 
+        try (FileWriter writer = new FileWriter(fileName + "." + extension)) {
+            writer.write(fileContent);
+            System.out.println("File written successfully");
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error writing file: " + e.getMessage());
+            return 1;
+        }
+        return 0;
+    }
+
+    public String loadFile(java.io.File source){
+        try {
+            return Files.readString(source.toPath());
+        } catch (IOException e) {
+            System.err.println("Error reading file: " + e.getMessage());
+            return null;
         }
     }
 
-    @Command(name = "transpile", description = "Transpile a source file")
-    public void transpile(@Parameters(index = "0", paramLabel = "SOURCE",
+    @Command(name = "transpile", description = "Transpile a source file from expressor to java")
+    public Integer transpile(@Parameters(index = "0", paramLabel = "SOURCE",
                 description = "The source file to transpile")
-    java.io.File source,
-    @Option(names = {"-o","--out"}) java.io.File out) {
-        if (!source.exists()) 
-                System.err.println("File not found: " + source);
-        else{
-            String code = source.toString();
-            System.out.println("✨ Transpiling file: " + source.getName());
-            writeFile(source,Transpilador.run(code),".java");
-        }
+    java.io.File source) {
+        return writeFile(source,Transpiler.run( loadFile(source) ),"java");
+    }
 
+    @Command(name = "build", description = "Build a source file, it generates a .class")
+    public Integer build(@Parameters(index = "0", paramLabel = "SOURCE",
+                description = "The source file to build")
+    java.io.File source) {
+        return writeFile(source,Builder.run(Transpiler.run(loadFile(source))),"class");
+    }
+
+    @Command(name = "run", description = "Run a source file, executes .class files")
+    public Integer run(@Parameters(index = "0", paramLabel = "SOURCE",
+                description = "The source file to build")
+    java.io.File source) {
+        try {
+            Runner.run(Builder.run(Transpiler.run(loadFile(source))));
+        } catch (Exception e) {
+            System.out.println("Error en la ejecucion." + e.getMessage());
+            return 1;
+        }
+        return  0;
     }
 }
