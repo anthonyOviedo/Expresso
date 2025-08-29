@@ -150,8 +150,8 @@ jobs:
             --main-jar "${{ needs.build-jar.outputs.jar_name }}" `
             --main-class "$env:MAIN_CLASS" `
             --win-console `
-            --dest dist `
-            --verbose
+            --dest dist
+
 
       - name: Upload .msi artifact
         uses: actions/upload-artifact@v4
