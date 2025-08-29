@@ -14,12 +14,8 @@ import picocli.CommandLine.Parameters;
          description = "Custom CLI tool")
 public class Expressor implements Runnable {
 
-    @Option(names = "--verbose", description = "Show detailed execution steps")
-    private boolean verbose;
-
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new Expressor()).execute(args);
-        System.exit(exitCode);
+        System.exit(new CommandLine(new Expressor()).execute(args));
     }
 
     @Override
@@ -27,17 +23,14 @@ public class Expressor implements Runnable {
         CommandLine.usage(this, System.out);
     }
 
-    private void log(String message) {
-        if (verbose) {
-            System.out.println(message);
-        }
+    private void log(String message, boolean verbose) {
+        if (verbose) System.out.println(message);
     }
 
-    public Integer writeFile(java.io.File source, String fileContent, String extension) {
-        String fileName = source.getName().split("\\.")[0];
-        try (FileWriter writer = new FileWriter(fileName + "." + extension)) {
-            writer.write(fileContent);
-            log("Archivo " + fileName + "." + extension + " generado correctamente");
+    public Integer writeFile(java.io.File source, String content, String extension, boolean verbose) {
+        try (FileWriter writer = new FileWriter(source.getName().split("\\.")[0] + "." + extension)) {
+            writer.write(content);
+            log("File " + source.getName().split("\\.")[0] + "." + extension + " created successfully", verbose);
         } catch (IOException e) {
             System.err.println("Error writing file: " + e.getMessage());
             return 1;
@@ -45,9 +38,9 @@ public class Expressor implements Runnable {
         return 0;
     }
 
-    public String loadFile(java.io.File source) {
+    public String loadFile(java.io.File source, boolean verbose) {
         try {
-            log("Leyendo archivo: " + source.getName());
+            log("Reading file: " + source.getName(), verbose);
             return Files.readString(source.toPath());
         } catch (IOException e) {
             System.err.println("Error reading file: " + e.getMessage());
@@ -57,47 +50,32 @@ public class Expressor implements Runnable {
 
     @Command(name = "transpile", description = "Transpile a source file from expressor to java")
     public Integer transpile(@Parameters(index = "0", paramLabel = "SOURCE",
-                description = "The source file to transpile")
-    java.io.File source) {
-        log("Iniciando transpile...");
-        String content = loadFile(source);
-        if (content == null) return 1;
-        log("Transpilando archivo...");
-        return writeFile(source, Transpiler.run(content), "java");
+                                         description = "The source file to transpile") java.io.File source,
+                             @Option(names = "--verbose", description = "Show detailed execution steps") boolean verbose) {
+        log("Starting transpile...", verbose);
+        return writeFile(source, Transpiler.run(loadFile(source, verbose)), "java", verbose);
     }
 
     @Command(name = "build", description = "Build a source file, it generates a .class")
     public Integer build(@Parameters(index = "0", paramLabel = "SOURCE",
-                description = "The source file to build")
-    java.io.File source) {
-        log("Iniciando build...");
-        String content = loadFile(source);
-        if (content == null) return 1;
-        log("Transpilando archivo...");
-        String javaCode = Transpiler.run(content);
-        log("Compilando archivo...");
-        return writeFile(source, Builder.run(javaCode), "class");
+                                     description = "The source file to build") java.io.File source,
+                         @Option(names = "--verbose", description = "Show detailed execution steps") boolean verbose) {
+        log("Starting build...", verbose);
+        return writeFile(source, Builder.run(Transpiler.run(loadFile(source, verbose))), "class", verbose);
     }
 
     @Command(name = "run", description = "Run a source file, executes .class files")
     public Integer run(@Parameters(index = "0", paramLabel = "SOURCE",
-                description = "The source file to build")
-    java.io.File source) {
-        log("Iniciando run...");
+                                   description = "The source file to run") java.io.File source,
+                       @Option(names = "--verbose", description = "Show detailed execution steps") boolean verbose) {
+        log("Starting run...", verbose);
         try {
-            String content = loadFile(source);
-            if (content == null) return 1;
-            log("Transpilando archivo...");
-            String javaCode = Transpiler.run(content);
-            log("Compilando archivo...");
-            String bytecode = Builder.run(javaCode);
-            log("Ejecutando archivo...");
-            Runner.run(bytecode);
+            Runner.run(Builder.run(Transpiler.run(loadFile(source, verbose))));
         } catch (Exception e) {
-            System.out.println("Error en la ejecucion. " + e.getMessage());
+            System.err.println("Execution error: " + e.getMessage());
             return 1;
         }
-        log("Ejecución finalizada correctamente");
+        log("Execution completed successfully", verbose);
         return 0;
     }
 }

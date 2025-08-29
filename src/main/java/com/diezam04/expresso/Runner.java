@@ -12,18 +12,18 @@ public class Runner {
         
         try {
             String className = toClassName.apply(classFile.getName());
-            System.out.println("Ejecutando la clase: " + className);
+            System.out.println("Executing class: " + className);
             ProcessBuilder processBuilder = new ProcessBuilder("java", className);
             processBuilder.inheritIO(); 
             Process process = processBuilder.start();
             process.waitFor();
-            return "Ejecucion completada.";
+            return "Execution completed.";
         } catch (Exception e) {
-            return "Error. Ejecucion No Completada." + e.getMessage();
+            return "Error. Execution not completed." + e.getMessage();
         }
     }
     public static Integer run(String classFile) {
-        System.out.println("Ejecutando la clase: " + classFile);
+        System.out.println("Executing class: " + classFile);
         return 0;
     }
 }
