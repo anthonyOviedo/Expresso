@@ -68,22 +68,26 @@ jobs:
           name: app-jar
           path: target
   
-      - name: jpackage -> .deb (no prefix fakeroot)
+      - name: jpackage -> .deb (icon & shortcut)
         shell: bash
         run: |
           set -euo pipefail
+          ICON="assets/icon.png"                    # <-- pon tu PNG o SVG en el repo, por ej. assets/icon.png
+          test -f "$ICON" || { echo "::error::Missing $ICON"; exit 1; }
           mkdir -p dist
           jpackage \
             --type deb \
-            --name "${APP_NAME}" \
+            --name "expressor" \
+            --linux-package-name "expressor" \
             --input target \
             --main-jar "${{ needs.build-jar.outputs.jar_name }}" \
             --main-class "${MAIN_CLASS}" \
-            --dest dist \
+            --icon "$ICON" \
+            --linux-shortcut \
             --app-version 1.0 \
-            --linux-deb-maintainer "Expresso Team <antony@hotmail.com>" \
+            --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
+            --dest dist \
             --verbose
-          ls -l dist
   
       - name: Upload .deb artifact
         uses: actions/upload-artifact@v4
