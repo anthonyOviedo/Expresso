@@ -151,8 +151,8 @@ jobs:
       - name: WiX harvest
         shell: powershell
         run: |
-          $src = Join-Path $PWD "out\$env:APP_NAME"
-          & "$env:WIX\bin\heat.exe" dir $src -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -out harvest.wxs
+              $src = Join-Path $PWD "out\$env:APP_NAME"
+              & "$env:WIX\bin\heat.exe" dir $src -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out harvest.wxs
 
       - name: Build MSI (WiX)
         shell: powershell
