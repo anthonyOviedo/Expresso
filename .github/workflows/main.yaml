@@ -6,7 +6,7 @@ on:
   pull_request:
 
 env:
-  APP_NAME: Expressor
+  APP_NAME: expressor
   MAIN_CLASS: com.diezam04.expresso.Expressor
 
 jobs:
