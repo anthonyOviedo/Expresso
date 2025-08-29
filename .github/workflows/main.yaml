@@ -152,15 +152,15 @@ jobs:
         shell: powershell
         run: |
           $src = Join-Path $PWD "out\$env:APP_NAME"
-          & "C:\Program Files (x86)\WiX Toolset v3.11\bin\heat.exe" dir $src -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -out harvest.wxs
+          & "$env:WIX\bin\heat.exe" dir $src -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -out harvest.wxs
 
       - name: Build MSI (WiX)
         shell: powershell
         run: |
-          $wix = "C:\Program Files (x86)\WiX Toolset v3.11\bin"
-          & "$wix\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" packaging/windows/product.wxs harvest.wxs
+          & "$env:WIX\bin\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" packaging/windows/product.wxs harvest.wxs
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          & "$wix\light.exe" -ext WixUtilExtension -o "dist\expressor-1.0.msi" packaging/windows/product.wixobj harvest.wixobj
+          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -o "dist\expressor-1.0.msi" packaging/windows/product.wixobj harvest.wixobj
+
 
       - name: Upload .msi
         uses: actions/upload-artifact@v4
