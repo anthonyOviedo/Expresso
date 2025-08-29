@@ -1,4 +1,4 @@
-name: Build JAR and package .deb
+name: Build JAR, then package (.deb / .msi)
 
 on:
   push:
@@ -7,11 +7,13 @@ on:
 
 env:
   APP_NAME: Expresso
-  MAIN_CLASS: com.diezam04.expresso.Cli  # <- change if your main class differs
+  MAIN_CLASS: com.diezam04.expresso.Cli
 
 jobs:
-  build-and-deb:
+  build-jar:
     runs-on: ubuntu-latest
+    outputs:
+      jar_name: ${{ steps.pick.outputs.jar_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,21 +34,103 @@ jobs:
           set -e
           jar=$(ls -1 target/*-runner.jar 2>/dev/null || true)
           if [ -z "$jar" ]; then jar=$(ls -1 target/*.jar | head -n1); fi
-          echo "jar=$jar" >> "$GITHUB_OUTPUT"
+          test -n "$jar" || { echo "No JAR found in target/"; exit 1; }
+          echo "Picked: $(basename "$jar")"
+          echo "jar_name=$(basename "$jar")" >> "$GITHUB_OUTPUT"
 
-      - name: jpackage -> .deb (minimal)
+      - name: Upload JARs
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: target/*.jar
+          if-no-files-found: error
+
+  package-deb:
+    needs: build-jar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - name: Install fakeroot
+        run: sudo apt-get update && sudo apt-get install -y fakeroot
+
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: jpackage -> .deb (fakeroot)
+        shell: bash
         run: |
           mkdir -p dist
-          jpackage \
+          fakeroot jpackage \
             --type deb \
             --name "${APP_NAME}" \
             --input target \
-            --main-jar "$(basename '${{ steps.pick.outputs.jar }}')" \
+            --main-jar "${{ needs.build-jar.outputs.jar_name }}" \
             --main-class "${MAIN_CLASS}" \
             --dest dist
 
       - name: Upload .deb artifact
         uses: actions/upload-artifact@v4
         with:
-          name: deb-package
+          name: linux-deb
           path: dist/*.deb
+          if-no-files-found: error
+
+
+  package-msi:
+    needs: build-jar
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - name: Install WiX Toolset (required for MSI)
+        shell: powershell
+        run: |
+          choco install wixtoolset -y
+          $wixBin = "${env:ProgramFiles(x86)}\WiX Toolset v3.11\bin"
+          if (Test-Path $wixBin) { $wixBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append }
+
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: jpackage -> .msi
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          jpackage `
+            --type msi `
+            --name "$env:APP_NAME" `
+            --input target `
+            --main-jar "${{ needs.build-jar.outputs.jar_name }}" `
+            --main-class "$env:MAIN_CLASS" `
+            --dest dist
+          # Extras opcionales:
+          #  --win-menu `
+          #  --win-shortcut `
+          #  --vendor "Tu Organización" `
+          #  --icon path\to\icon.ico
+
+      - name: Upload .msi artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: dist/*.msi
+          if-no-files-found: error
