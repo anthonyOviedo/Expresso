@@ -4,3 +4,4 @@ dependency-reduced-pom.xml
 .gitignore
 helloworld.java
 helloworld.class
+.vscode/settings.json
