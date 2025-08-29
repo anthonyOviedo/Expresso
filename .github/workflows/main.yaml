@@ -70,33 +70,24 @@ jobs:
       - name: Write Debian maintainer scripts (symlink in PATH)
         shell: bash
         run: |
-          set -euo pipefail
           mkdir -p packaging
-          cat > packaging/postinstall <<'EOF'
+
+          cat > packaging/postinst <<'EOF'
           #!/bin/sh
-          set -e
-          APP="expressor"
-          TARGET="/opt/$APP/bin/$APP"
-          LINK="/usr/local/bin/$APP"
-          if [ -x "$TARGET" ]; then ln -sf "$TARGET" "$LINK"; fi
+          ln -sf /opt/"${APP_NAME}"/bin/"${APP_NAME}" /usr/local/bin/"${APP_NAME}"
           exit 0
           EOF
+
           cat > packaging/postrm <<'EOF'
+          # packaging/postrm
           #!/bin/sh
-          set -e
-          APP="expressor"
-          TARGET="/opt/$APP/bin/$APP"
-          LINK="/usr/local/bin/$APP"
-          case "$1" in
-            remove|purge)
-              if [ -L "$LINK" ] && [ "$(readlink -f "$LINK")" = "$TARGET" ]; then rm -f "$LINK"; fi
-              ;;
-          esac
+          rm -f /usr/local/bin/"${APP_NAME}"
           exit 0
-          EOF
-          # some JDKs look for postinst
-          cp packaging/postinstall packaging/postinst
-          chmod 755 packaging/postinstall packaging/postinst packaging/postrm
+
+
+          chmod 755 packaging/postinst packaging/postrm
+
+
 
       - name: jpackage -> .deb (CLI only)
         shell: bash
