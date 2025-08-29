@@ -1,0 +1,172 @@
+name: Build JAR -> package (.deb / .msi)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+env:
+  APP_NAME: expressor
+  MAIN_CLASS: com.diezam04.expresso.Expressor
+
+jobs:
+  build-jar:
+    runs-on: ubuntu-latest
+    outputs:
+      jar_name: ${{ steps.pick.outputs.jar_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B -DskipTests package
+
+      - name: Pick main JAR (prefer *-runner.jar)
+        id: pick
+        shell: bash
+        run: |
+          set -e
+          jar=$(ls -1 target/*-runner.jar 2>/dev/null || true)
+          if [ -z "$jar" ]; then jar=$(ls -1 target/*.jar | head -n1); fi
+          test -n "$jar" || { echo "No JAR found in target/"; exit 1; }
+          echo "jar_name=$(basename "$jar")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload JARs
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: target/*.jar
+          if-no-files-found: error
+
+  package-deb:
+    needs: build-jar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - name: Install jpackage deps (deb)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot dpkg-dev binutils file
+
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: Write Debian maintainer scripts (symlink in PATH)
+        shell: bash
+        run: |
+          mkdir -p packaging
+
+          cat > packaging/postinst <<'EOF'
+          #!/bin/sh
+          ln -sf /opt/"${APP_NAME}"/bin/"${APP_NAME}" /usr/local/bin/"${APP_NAME}"
+          exit 0
+          EOF
+
+          cat > packaging/postrm <<'EOF'
+          # packaging/postrm
+          #!/bin/sh
+          rm -f /usr/local/bin/"${APP_NAME}"
+          exit 0
+
+
+          chmod 755 packaging/postinst packaging/postrm
+
+
+
+      - name: jpackage -> .deb (CLI only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          jpackage \
+            --type deb \
+            --name "${APP_NAME}" \
+            --linux-package-name "${APP_NAME}" \
+            --input target \
+            --main-jar "${{ needs.build-jar.outputs.jar_name }}" \
+            --main-class "${MAIN_CLASS}" \
+            --app-version 1.0 \
+            --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
+            --resource-dir packaging \
+            --dest dist \
+            --verbose
+
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: dist/*.deb
+          if-no-files-found: error
+  
+  package-msi:
+    needs: build-jar
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - name: Install WiX
+        shell: powershell
+        run: choco install wixtoolset -y
+
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: jpackage -> app-image (CLI-only)
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          jpackage `
+            --type app-image `
+            --name "$env:APP_NAME" `
+            --input target `
+            --main-jar "${{ needs.build-jar.outputs.jar_name }}" `
+            --main-class "$env:MAIN_CLASS" `
+            --win-console `
+            --dest out
+
+      - name: WiX harvest
+        shell: powershell
+        run: |
+              $src = Join-Path $PWD "out\$env:APP_NAME"
+              & "$env:WIX\bin\heat.exe" dir $src -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out harvest.wxs
+
+      - name: Build MSI (WiX)
+        shell: powershell
+        run: |
+          & "$env:WIX\bin\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" -out obj\ packaging/windows/product.wxs harvest.wxs
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\expressor-1.0.msi" obj\product.wixobj obj\harvest.wixobj
+
+
+
+      - name: Upload .msi
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: dist/*.msi
+          if-no-files-found: error
