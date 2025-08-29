@@ -1,4 +1,4 @@
-name: Build JAR, then package (.deb / .msi)
+name: Build JAR -> package (.deb / .msi)
 
 on:
   push:
