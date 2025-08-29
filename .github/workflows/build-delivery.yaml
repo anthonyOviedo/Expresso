@@ -2,7 +2,7 @@ name: Build JAR, then package (.deb / .msi)
 
 on:
   push:
-    branches: [ 34-crear-java-image ]
+    branches: [ main ]
   pull_request:
 
 env:
