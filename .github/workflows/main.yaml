@@ -6,7 +6,7 @@ on:
   pull_request:
 
 env:
-  APP_NAME: Expresso
+  APP_NAME: Expressor
   MAIN_CLASS: com.diezam04.expresso.Expressor
 
 jobs:
@@ -81,7 +81,7 @@ jobs:
             --main-class "${MAIN_CLASS}" \
             --dest dist \
             --app-version 1.0 \
-            --linux-deb-maintainer "Expresso Team <dev@example.com>" \
+            --linux-deb-maintainer "Expresso Team <antony@hotmail.com>" \
             --verbose
           ls -l dist
   
