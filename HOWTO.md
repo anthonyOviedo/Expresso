@@ -1,7 +1,7 @@
-# COMO correr el proyecto en docker 
+# ######################################################################################### COMO correr el proyecto en docker ?
 
 
-# install docker on machine 
+#  install docker on machine 
 
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg lsb-release
@@ -39,7 +39,7 @@ docker exec -it Expressor bin/bash/
 
 
 
-# COMO correr el proyecto en local 
+# ######################################################################################### COMO correr el proyecto en local ?
 
 # descargar maven
 sudo apt install maven
@@ -64,3 +64,73 @@ source ~/.bashrc
 
 # ejecuto el comando
 expressor --help
+
+
+
+# #########################################################################################  COMO crear un ejecutable para Windows ?
+param(
+  [string]$AppName   = $env:APP_NAME,     # e.g. "expressor"
+  [string]$MainClass = $env:MAIN_CLASS,   # e.g. "com.tony.expresso.Expressor"
+  [string]$JarName   = $env:JAR_NAME,     # e.g. "expresso-0.1.0-runner.jar"
+  [string]$Version   = "1.0.0"
+)
+
+# --- Install WiX (like the Action) ---
+choco install wixtoolset -y
+
+# --- Paths ---
+$WixBin = Join-Path $env:WIX "bin"
+$RepoRoot = $PWD
+$TargetDir = Join-Path $RepoRoot "target"
+$OutDir = Join-Path $RepoRoot "out"
+$ObjDir = Join-Path $RepoRoot "obj"
+$DistDir = Join-Path $RepoRoot "dist"
+
+# --- Resolve JAR if not provided ---
+if (-not $JarName) {
+  $jar = Get-ChildItem -Path $TargetDir -Filter *.jar | Select-Object -First 1
+  $JarName = $jar.Name
+}
+
+# --- jpackage -> app-image (CLI-only) ---
+New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+jpackage `
+  --type app-image `
+  --name "$AppName" `
+  --input "$TargetDir" `
+  --main-jar "$JarName" `
+  --main-class "$MainClass" `
+  --win-console `
+  --dest "$OutDir"
+
+# --- WiX harvest ---
+$AppImageDir = Join-Path $OutDir $AppName
+& "$WixBin\heat.exe" dir "$AppImageDir" `
+  -cg AppFiles `
+  -dr INSTALLFOLDER `
+  -srd `
+  -var var.SourceDir `
+  -ag `
+  -out "$RepoRoot\harvest.wxs"
+
+# --- Build MSI (candle + light) ---
+New-Item -ItemType Directory -Force -Path $ObjDir | Out-Null
+& "$WixBin\candle.exe" `
+  -arch x64 `
+  -dSourceDir="$AppImageDir" `
+  -out "$ObjDir\" `
+  "$RepoRoot\packaging\windows\product.wxs" `
+  "$RepoRoot\harvest.wxs"
+
+New-Item -ItemType Directory -Force -Path $DistDir | Out-Null
+$MsiPath = Join-Path $DistDir "$AppName-$Version.msi"
+& "$WixBin\light.exe" `
+  -ext WixUtilExtension `
+  -sval `
+  -o "$MsiPath" `
+  "$ObjDir\product.wixobj" `
+  "$ObjDir\harvest.wixobj"
+
+Write-Host "MSI created at: $MsiPath"
+
+
