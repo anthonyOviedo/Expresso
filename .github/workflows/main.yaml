@@ -72,6 +72,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          ICON="assets/icon.png"
+          test -f "$ICON" || { echo "::error::Missing $ICON"; exit 1; }
           mkdir -p dist
           jpackage \
             --type deb \
