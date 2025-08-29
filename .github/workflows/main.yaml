@@ -46,44 +46,52 @@ jobs:
           if-no-files-found: error
 
   package-deb:
-    needs: build-jar
-    runs-on: ubuntu-latest
-    steps:
+      needs: build-jar
+      runs-on: ubuntu-latest
+      steps:
       - uses: actions/checkout@v4
-
+  
       - name: Set up Temurin JDK 24
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '24'
-
-      - name: Install fakeroot
-        run: sudo apt-get update && sudo apt-get install -y fakeroot
-
+  
+      - name: Install jpackage deps (deb)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot dpkg-dev binutils file desktop-file-utils
+  
       - name: Download JARs
         uses: actions/download-artifact@v4
         with:
           name: app-jar
           path: target
-
-      - name: jpackage -> .deb (fakeroot)
+  
+      - name: jpackage -> .deb (no prefix fakeroot)
         shell: bash
         run: |
+          set -euo pipefail
           mkdir -p dist
-          fakeroot jpackage \
+          jpackage \
             --type deb \
             --name "${APP_NAME}" \
             --input target \
             --main-jar "${{ needs.build-jar.outputs.jar_name }}" \
             --main-class "${MAIN_CLASS}" \
-            --dest dist
-
+            --dest dist \
+            --app-version 1.0 \
+            --linux-deb-maintainer "Expresso Team <dev@example.com>" \
+            --verbose
+          ls -l dist
+  
       - name: Upload .deb artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-deb
           path: dist/*.deb
           if-no-files-found: error
+
 
 
   package-msi:
