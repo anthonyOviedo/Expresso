@@ -35,7 +35,6 @@ jobs:
           jar=$(ls -1 target/*-runner.jar 2>/dev/null || true)
           if [ -z "$jar" ]; then jar=$(ls -1 target/*.jar | head -n1); fi
           test -n "$jar" || { echo "No JAR found in target/"; exit 1; }
-          echo "Picked: $(basename "$jar")"
           echo "jar_name=$(basename "$jar")" >> "$GITHUB_OUTPUT"
 
       - name: Upload JARs
@@ -60,7 +59,7 @@ jobs:
       - name: Install jpackage deps (deb)
         run: |
           sudo apt-get update
-          sudo apt-get install -y fakeroot dpkg-dev binutils file desktop-file-utils
+          sudo apt-get install -y fakeroot dpkg-dev binutils file
 
       - name: Download JARs
         uses: actions/download-artifact@v4
@@ -68,29 +67,20 @@ jobs:
           name: app-jar
           path: target
 
-      - name: Write Debian maintainer scripts (postinstall/postrm)
+      - name: Write Debian maintainer scripts (symlink in PATH)
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p packaging
-
-          # postinstall: crea/actualiza symlink /usr/local/bin/expressor -> /opt/expressor/bin/expressor
           cat > packaging/postinstall <<'EOF'
           #!/bin/sh
           set -e
           APP="expressor"
           TARGET="/opt/$APP/bin/$APP"
           LINK="/usr/local/bin/$APP"
-          if [ -x "$TARGET" ]; then
-            ln -sf "$TARGET" "$LINK"
-          fi
-          # best-effort: refrescar cachés de escritorio/iconos si existen
-          if command -v update-desktop-database >/dev/null 2>&1; then update-desktop-database -q || true; fi
-          if command -v gtk-update-icon-cache >/dev/null 2>&1; then gtk-update-icon-cache -q /usr/share/icons/hicolor || true; fi
+          if [ -x "$TARGET" ]; then ln -sf "$TARGET" "$LINK"; fi
           exit 0
           EOF
-
-          # postrm: elimina symlink sólo si apunta a nuestro binario
           cat > packaging/postrm <<'EOF'
           #!/bin/sh
           set -e
@@ -99,25 +89,19 @@ jobs:
           LINK="/usr/local/bin/$APP"
           case "$1" in
             remove|purge)
-              if [ -L "$LINK" ] && [ "$(readlink -f "$LINK")" = "$TARGET" ]; then
-                rm -f "$LINK"
-              fi
+              if [ -L "$LINK" ] && [ "$(readlink -f "$LINK")" = "$TARGET" ]; then rm -f "$LINK"; fi
               ;;
           esac
           exit 0
           EOF
-
-          # Compat: algunos JDKs usan nombres "postinst/postrm" en lugar de "postinstall/postrm"
+          # some JDKs look for postinst
           cp packaging/postinstall packaging/postinst
-
           chmod 755 packaging/postinstall packaging/postinst packaging/postrm
 
-      - name: jpackage -> .deb (icon & shortcut + postinstall symlink)
+      - name: jpackage -> .deb (CLI only)
         shell: bash
         run: |
           set -euo pipefail
-          ICON="assets/icon.png"   # asegúrate de tener este archivo en el repo
-          test -f "$ICON" || { echo "::error::Missing $ICON"; exit 1; }
           mkdir -p dist
           jpackage \
             --type deb \
@@ -126,8 +110,6 @@ jobs:
             --input target \
             --main-jar "${{ needs.build-jar.outputs.jar_name }}" \
             --main-class "${MAIN_CLASS}" \
-            --icon "$ICON" \
-            --linux-shortcut \
             --app-version 1.0 \
             --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
             --resource-dir packaging \
@@ -166,22 +148,17 @@ jobs:
           name: app-jar
           path: target
 
-      - name: jpackage -> .msi (menu & shortcut; icon opcional)
+      - name: jpackage -> .msi (CLI only)
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          $Icon = "$env:GITHUB_WORKSPACE\assets\icon.ico"
-          $iconArg = ""
-          if (Test-Path $Icon) { $iconArg = "--icon `"$Icon`"" }
           jpackage `
             --type msi `
             --name "$env:APP_NAME" `
             --input target `
             --main-jar "${{ needs.build-jar.outputs.jar_name }}" `
             --main-class "$env:MAIN_CLASS" `
-            --win-menu `
-            --win-shortcut `
-            $iconArg `
+            --win-console `
             --dest dist `
             --verbose
 
