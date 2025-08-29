@@ -15,7 +15,7 @@
     <DirectoryRef Id="INSTALLFOLDER">
       <Component Id="EnvPath" Guid="D6B5B8E2-6C5A-4E89-9CB6-3E2AD0B5E9A1" Win64="yes">
         <CreateFolder/>
-        <Environment Id="AddPath" Name="PATH" Action="set" Part="last" System="yes" Value="[INSTALLFOLDER]bin"/>
+        <Environment Id="AddPath" Name="PATH" Action="set" Part="last" System="yes" Value="[INSTALLFOLDER]"/>
       </Component>
     </DirectoryRef>
   </Product>
