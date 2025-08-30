@@ -27,10 +27,20 @@ public class Expressor implements Runnable {
         if (verbose) System.out.println(message);
     }
 
-    public Integer writeFile(java.io.File source, String content, String extension, boolean verbose) {
-        try (FileWriter writer = new FileWriter(source.getName().split("\\.")[0] + "." + extension)) {
-            writer.write(content);
-            log("File " + source.getName().split("\\.")[0] + "." + extension + " created successfully", verbose);
+    public Integer writeFile(java.io.File source, String content, String extension, String outDir, boolean verbose) {
+        try {
+            java.io.File outFolder = new java.io.File(outDir);
+            if (!outFolder.exists()) {
+                outFolder.mkdirs(); // crea la carpeta si no existe
+            }
+            String baseName = source.getName().split("\\.")[0];
+            java.io.File outFile = new java.io.File(outFolder, baseName + "." + extension);
+
+            try (FileWriter writer = new FileWriter(outFile)) {
+                writer.write(content);
+            }
+
+            log("File " + outFile.getAbsolutePath() + " created successfully", verbose);
         } catch (IOException e) {
             System.err.println("Error writing file: " + e.getMessage());
             return 1;
@@ -48,28 +58,36 @@ public class Expressor implements Runnable {
         }
     }
 
-    @Command(name = "transpile", description = "Transpile a source file from expressor to java")
+
+     @Command(name = "transpile", description = "Transpile a source file from expressor to java")
     public Integer transpile(@Parameters(index = "0", paramLabel = "SOURCE",
                                          description = "The source file to transpile") java.io.File source,
+                             @Option(names = "--out", description = "Output directory (default: current directory)") String outDir,
                              @Option(names = "--verbose", description = "Show detailed execution steps") boolean verbose) {
         log("Starting transpile...", verbose);
-        return writeFile(source, Transpiler.run(loadFile(source, verbose)), "java", verbose);
+        if (outDir == null) outDir = ".";
+        return writeFile(source, Transpiler.run(loadFile(source, verbose)), "java", outDir, verbose);
     }
+
 
     @Command(name = "build", description = "Build a source file, it generates a .class")
     public Integer build(@Parameters(index = "0", paramLabel = "SOURCE",
                                      description = "The source file to build") java.io.File source,
+                         @Option(names = "--out", description = "Output directory (default: current directory)") String outDir,
                          @Option(names = "--verbose", description = "Show detailed execution steps") boolean verbose) {
         log("Starting build...", verbose);
-        return writeFile(source, Builder.run(Transpiler.run(loadFile(source, verbose))), "class", verbose);
+        if (outDir == null) outDir = ".";
+        return writeFile(source, Builder.run(Transpiler.run(loadFile(source, verbose))), "class", outDir, verbose);
     }
 
 
     @Command(name = "run", description = "Run a source file, executes .class files")
     public Integer run(@Parameters(index = "0", paramLabel = "SOURCE",
                                    description = "The source file to run") java.io.File source,
+                       @Option(names = "--out", description = "Output directory (default: current directory)") String outDir,
                        @Option(names = "--verbose", description = "Show detailed execution steps") boolean verbose) {
         log("Starting run...", verbose);
+        if (outDir == null) outDir = ".";
         try {
             Runner.run(Builder.run(Transpiler.run(loadFile(source, verbose))));
         } catch (Exception e) {
