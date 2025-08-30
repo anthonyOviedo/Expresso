@@ -44,9 +44,11 @@ jpackage ^
   --dest "%OUT_DIR%"
 
 set "SRC=%OUT_DIR%\%APP_NAME%"
+
 "%WIX%\bin\heat.exe" dir "%SRC%" -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out harvest.wxs
 "%WIX%\bin\candle.exe" -arch x64 -dSourceDir="%SRC%" -out "%OBJ_DIR%\" packaging\windows\product.wxs harvest.wxs
 "%WIX%\bin\light.exe" -ext WixUtilExtension -sval -o "%DIST_DIR%\%APP_NAME%-1.0.msi" "%OBJ_DIR%\product.wixobj" "%OBJ_DIR%\harvest.wixobj"
+
 -- 
 
 ---
