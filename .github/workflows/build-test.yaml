@@ -27,14 +27,22 @@ jobs:
       - name: Build with Maven
         run: mvn -B -DskipTests package
 
-      - name: Pick main JAR (prefer *-runner.jar)
-        id: pick
-        shell: bash
-        run: |
-          jar=$(ls -1 target/*-runner.jar 2>/dev/null || ls -1 target/*.jar | head -n1)
-          echo "jar_name=$(basename "$jar")" >> "$GITHUB_OUTPUT"
-
       - name: Test jar
-      
+        run: |
+          echo "Testing ${{ steps.pick.outputs.jar_name }}"
+          java -jar "target/${{ steps.pick.outputs.jar_name }}"
+          java -jar "target/${{ steps.pick.outputs.jar_name }}" --help
+          java -jar "target/${{ steps.pick.outputs.jar_name }}" transform --out output HelloWorld.Expresso
+          java -jar "target/${{ steps.pick.outputs.jar_name }}" build --out output HelloWorld.Expresso
+          java -jar "target/${{ steps.pick.outputs.jar_name }}" run --out output HelloWorld.Expresso
+
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@master
+        with:
+          args: 'The project {{ EVENT_PAYLOAD.repository.full_name }} has been deployed. in branch {{ EVENT_PAYLOAD.ref }}'
+
+
 
  

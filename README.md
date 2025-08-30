@@ -58,15 +58,15 @@ set "SRC=%OUT_DIR%\%APP_NAME%"
 
 ```bash
 # a) Transpilar
-expressor transpile Helloworld.expresso
+expressor transpile HelloWorld.Expresso
 # -> Genera Helloworld.java (simulación inicial)
 
 # b) Compilar
-expressor build Helloworld.expresso
+expressor build HelloWorld.Expresso
 # -> Transpila y compila (Helloworld.class) usando javax.tools.JavaCompiler
 
 # c) Ejecutar
-expressor run Helloworld.expresso
+expressor run HelloWorld.Expresso
 # -> Transpila, compila y ejecuta la clase resultante
 ```
 ---
