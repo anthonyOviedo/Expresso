@@ -27,15 +27,21 @@ jobs:
 
       - name: Build with Maven
         run: mvn -B -DskipTests package
+      
+      - name: Pick main JAR
+        id: pick
+        shell: bash
+        run: echo "jar_name=$(basename $(ls target/*-runner.jar 2>/dev/null || ls target/*.jar | head -n1))" >> "$GITHUB_OUTPUT"
 
-      - name: Test jar
+
+      - name: Test JAR
         run: |
-          echo "Testing *runner.jar"
-          java -jar "target/*runner.jar"
-          java -jar "target/*runner.jar" --help
-          java -jar "target/*runner.jar" transform --out output HelloWorld.Expresso
-          java -jar "target/*runner.jar" build --out output HelloWorld.Expresso
-          java -jar "target/*runner.jar" run --out output HelloWorld.Expresso
+          echo "Testing ${{ steps.pick.outputs.jar_name }}"
+          java -jar "target/${{ steps.pick.outputs.jar_name }}"
+          java -jar "target/${{ steps.pick.outputs.jar_name }}" --help
+          java -jar "target/${{ steps.pick.outputs.jar_name }}" transform --out output HelloWorld.Expresso
+          java -jar "target/${{ steps.pick.outputs.jar_name }}" build --out output HelloWorld.Expresso
+          java -jar "target/${{ steps.pick.outputs.jar_name }}" run --out output HelloWorld.Expresso
 
       - name: Discord notify success (apps deployment)
         if: success()
