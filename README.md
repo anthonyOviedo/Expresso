@@ -53,7 +53,7 @@ set "SRC=%OUT_DIR%\%APP_NAME%"
 
 ---
 
-## ▶️ Uso basico del CLI `expressor`
+## Uso basico del CLI `expressor`
 > El CLI es una aplicación **Java** (no *shell script*). Los siguientes comandos son parte del **Sprint Inicial** como *mocks* funcionales.
 
 ```bash
