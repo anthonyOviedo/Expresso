@@ -39,7 +39,7 @@ jobs:
           echo "Testing ${{ steps.pick.outputs.jar_name }}"
           java -jar "target/${{ steps.pick.outputs.jar_name }}"
           java -jar "target/${{ steps.pick.outputs.jar_name }}" --help
-          java -jar "target/${{ steps.pick.outputs.jar_name }}" transform --out output HelloWorld.Expresso
+          java -jar "target/${{ steps.pick.outputs.jar_name }}" transpile --out output HelloWorld.Expresso
           java -jar "target/${{ steps.pick.outputs.jar_name }}" build --out output HelloWorld.Expresso
           java -jar "target/${{ steps.pick.outputs.jar_name }}" run --out output HelloWorld.Expresso
 
