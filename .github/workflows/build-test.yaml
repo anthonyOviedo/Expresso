@@ -1,9 +1,8 @@
 name: Build JAR -> Test JAR 
 
 on:
-  push:
-    branches: [ dev ]
-  pull_request:
+  pull_request: 
+    branches: [ "dev" ]
 
 env:
   APP_NAME: expressor
@@ -26,22 +25,43 @@ jobs:
 
       - name: Build with Maven
         run: mvn -B -DskipTests package
+      
+      - name: Pick main JAR
+        id: pick
+        shell: bash
+        run: echo "jar_name=$(basename $(ls target/*-runner.jar 2>/dev/null || ls target/*.jar | head -n1))" >> "$GITHUB_OUTPUT"
 
-      - name: Test jar
+
+      - name: Test JAR
         run: |
           echo "Testing ${{ steps.pick.outputs.jar_name }}"
           java -jar "target/${{ steps.pick.outputs.jar_name }}"
           java -jar "target/${{ steps.pick.outputs.jar_name }}" --help
-          java -jar "target/${{ steps.pick.outputs.jar_name }}" transform --out output HelloWorld.Expresso
+          java -jar "target/${{ steps.pick.outputs.jar_name }}" transpile --out output HelloWorld.Expresso
           java -jar "target/${{ steps.pick.outputs.jar_name }}" build --out output HelloWorld.Expresso
           java -jar "target/${{ steps.pick.outputs.jar_name }}" run --out output HelloWorld.Expresso
 
-      - name: Discord notification
+      - name: Discord notify success (apps deployment)
+        if: success()
+        uses: Ilshidur/action-discord@0.3.2
+        with:
+          args: |
+            🖥️ ✅ Apps are tested and ready to be used .
+            Commit `${{ github.sha }}`
+            Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        uses: Ilshidur/action-discord@master
+
+      - name: Discord notify failure (apps deployment)
+        if: failure()
+        uses: Ilshidur/action-discord@0.3.2
         with:
-          args: 'The project {{ EVENT_PAYLOAD.repository.full_name }} has been deployed. in branch {{ EVENT_PAYLOAD.ref }}'
+          args: |
+            🖥️ ❌ Failed Testing in development.
+            Commit `${{ github.sha }}`
+            Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} 
 
 
 

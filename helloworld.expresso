@@ -1,5 +1,0 @@
-public class HelloWorld{
-    public static String run(String expressoFile) {
-        System.out.println("Transpilation completed.");
-    }
-}
