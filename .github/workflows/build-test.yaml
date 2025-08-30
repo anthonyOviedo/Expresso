@@ -1,8 +1,6 @@
 name: Build JAR -> Test JAR 
 
 on:
-  push:
-    branches: [ "43-unit-test" ]
   pull_request: 
     branches: [ "dev" ]
 
