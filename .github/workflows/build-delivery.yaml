@@ -3,7 +3,7 @@ name: Build JAR -> package (.deb / .msi)
 on:
   push:
     branches: [ main ]
-  pull_request:
+
 
 env:
   APP_NAME: expressor
