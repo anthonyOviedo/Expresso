@@ -1,0 +1,40 @@
+name: Build JAR -> Test JAR 
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+
+env:
+  APP_NAME: expressor
+  MAIN_CLASS: com.diezam04.expresso.Expressor
+
+jobs:
+  build-jar:
+    runs-on: ubuntu-latest
+    outputs:
+      jar_name: ${{ steps.pick.outputs.jar_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B -DskipTests package
+
+      - name: Pick main JAR (prefer *-runner.jar)
+        id: pick
+        shell: bash
+        run: |
+          jar=$(ls -1 target/*-runner.jar 2>/dev/null || ls -1 target/*.jar | head -n1)
+          echo "jar_name=$(basename "$jar")" >> "$GITHUB_OUTPUT"
+
+      - name: Test jar
+      
+
+ 
