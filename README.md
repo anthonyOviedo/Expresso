@@ -27,6 +27,8 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 - **Maven**  
 
 # Generar instalador en cmd
+
+```cmd
 set "OUT_DIR=%cd%\out"
 set "OBJ_DIR=%cd%\obj"
 set "DIST_DIR=%cd%\dist"
@@ -48,8 +50,7 @@ set "SRC=%OUT_DIR%\%APP_NAME%"
 "%WIX%\bin\heat.exe" dir "%SRC%" -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out harvest.wxs
 "%WIX%\bin\candle.exe" -arch x64 -dSourceDir="%SRC%" -out "%OBJ_DIR%\" packaging\windows\product.wxs harvest.wxs
 "%WIX%\bin\light.exe" -ext WixUtilExtension -sval -o "%DIST_DIR%\%APP_NAME%-1.0.msi" "%OBJ_DIR%\product.wixobj" "%OBJ_DIR%\harvest.wixobj"
-
--- 
+```
 
 ---
 
