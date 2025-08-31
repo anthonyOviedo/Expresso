@@ -5,8 +5,8 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 - https://github.com/anthonyOviedo/Expresso/blob/main/EIF400-II-2025_Expresso_Anexo_I_Inicial.pdf
 ### Estudiantes 
 - Antony Oviedo Alfaro
-- Esteban Sanchez
-- Josh 
+- Esteban Francisco Sánchez Sánchez
+- Josh Gámez Sánchez
 ---
 
 ## Instaladores disponibles 
@@ -25,8 +25,12 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 ## Requisitos para generar un Installador
 - **JDK 23+** (desarrollo y *target*).  
 - **Maven**  
+### Generar un JAVA Jar
+```cmd
+mvn -B -DskipTests package
+```
 
-# Generar instalador en cmd
+### Generar instalador en cmd usando el Jar creado.
 
 ```cmd
 set "OUT_DIR=%cd%\out"

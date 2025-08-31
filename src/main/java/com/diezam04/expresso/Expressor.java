@@ -1,5 +1,6 @@
 package com.diezam04.expresso;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,7 +11,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 @Command(name = "expressor", mixinStandardHelpOptions = true,
-         version = "expressor 1.0",
+         version = "expressor 1.1",
          description = "Custom CLI tool")
 public class Expressor implements Runnable {
 
@@ -51,11 +52,14 @@ public class Expressor implements Runnable {
     public String loadFile(java.io.File source, boolean verbose) {
         try {
             log("Reading file: " + source.getName(), verbose);
-            return Files.readString(source.toPath());
+            String content = Files.readString(source.toPath());
+            if (!content.isBlank()) {
+                return content;
+            }
         } catch (IOException e) {
-            System.err.println("Error reading file: " + e.getMessage());
-            return null;
+            System.err.println("Error reading file: "+ source.getName() + " ERORR: "+e.getMessage());
         }
+        return null;
     }
 
 
@@ -66,7 +70,12 @@ public class Expressor implements Runnable {
                              @Option(names = "--verbose", description = "Show detailed execution steps") boolean verbose) {
         log("Starting transpile...", verbose);
         if (outDir == null) outDir = ".";
-        return writeFile(source, Transpiler.run(loadFile(source, verbose)), "java", outDir, verbose);
+        String file = loadFile(source, verbose);
+        if (file == null){
+            log("File is empty",verbose);
+            return 1;
+        }
+        return writeFile(source, Transpiler.run(file), "java", outDir, verbose);
     }
 
 
@@ -77,7 +86,12 @@ public class Expressor implements Runnable {
                          @Option(names = "--verbose", description = "Show detailed execution steps") boolean verbose) {
         log("Starting build...", verbose);
         if (outDir == null) outDir = ".";
-        return writeFile(source, Builder.run(Transpiler.run(loadFile(source, verbose))), "class", outDir, verbose);
+        String file = loadFile(source, verbose);
+        if (file == null){
+            log("File is empty",verbose);
+            return 1;
+        }
+        return writeFile(source, Builder.run(Transpiler.run(file)), "class", outDir, verbose);
     }
 
 
@@ -89,7 +103,18 @@ public class Expressor implements Runnable {
         log("Starting run...", verbose);
         if (outDir == null) outDir = ".";
         try {
-            Runner.run(Builder.run(Transpiler.run(loadFile(source, verbose))));
+            String file = loadFile(source, verbose);
+            if (file == null){
+                log("File is empty",verbose);
+                return 1;
+            }    
+            String content = Builder.run(Transpiler.run(loadFile(source, verbose)));
+            int status = writeFile(source, content, "class", outDir, verbose);
+            if (status == 0) {
+                String baseName = source.getName().replaceFirst("\\.[^.]+$", ""); // quita extensión original
+                File outFile = new File(outDir, baseName + ".class");
+                Runner.run(outFile.getAbsolutePath());
+            }
         } catch (Exception e) {
             System.err.println("Execution error: " + e.getMessage());
             return 1;
