@@ -3,7 +3,7 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 > Proyecto ágil: sujeto a refinamientos y cambios conforme avance el curso.
 > Fuente primaria del enunciado: 
 - https://github.com/anthonyOviedo/Expresso/blob/main/EIF400-II-2025_Expresso_Anexo_I_Inicial.pdf
-> Estudiantes 
+### Estudiantes 
 - Antony Oviedo Alfaro
 - Esteban Sanchez
 - Josh 
