@@ -101,7 +101,7 @@ jobs:
             --input target \
             --main-jar "${{ needs.build-jar.outputs.jar_name }}" \
             --main-class "${MAIN_CLASS}" \
-            --app-version 1.0 \
+            --app-version 1.1 \
             --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
             --resource-dir packaging \
             --dest dist \
@@ -160,7 +160,7 @@ jobs:
         run: |
           & "$env:WIX\bin\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" -out obj\ packaging/windows/product.wxs harvest.wxs
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\expressor-1.0.msi" obj\product.wixobj obj\harvest.wixobj
+          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\expressor-1.1.msi" obj\product.wixobj obj\harvest.wixobj
 
 
 
