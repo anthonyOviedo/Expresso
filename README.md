@@ -12,7 +12,7 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 ## Instaladores disponibles 
 
 ### version Alpha01
-> https://github.com/anthonyOviedo/Expresso/releases/edit/v0.1-alpha
+> https://github.com/anthonyOviedo/Expresso/releases/tag/v1.0_alpha
 
 ## Propósito
 **Expresso** es un *minilenguaje* compacto y expresivo, diseñado para practicar conceptos de programación funcional (tipos algebraicos, funciones y *pattern matching*) y para aprender cómo un **transpilador** convierte ideas de alto nivel en **código Java 23** legible y ejecutable. El objetivo es construir de forma incremental un **tooling CLI** que:
