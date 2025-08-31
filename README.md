@@ -10,7 +10,8 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 ---
 
 ## Instaladores disponibles 
-
+### version 1.1
+> https://github.com/anthonyOviedo/Expresso/releases/tag/v1.1
 ### version Alpha01
 > https://github.com/anthonyOviedo/Expresso/releases/tag/v1.0_alpha
 
