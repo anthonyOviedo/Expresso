@@ -9,7 +9,7 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 - Josh 
 ---
 
-## Versiones disponibles para instaladores 
+## Instaladores disponibles 
 
 ### version Alpha01
 > https://github.com/anthonyOviedo/Expresso/releases/edit/v0.1-alpha
@@ -22,7 +22,7 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 
 ---
 
-## Requisitos para generar el Installador
+## Requisitos para generar un Installador
 - **JDK 23+** (desarrollo y *target*).  
 - **Maven**  
 
