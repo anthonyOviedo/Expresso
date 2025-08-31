@@ -3,16 +3,16 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 > Proyecto ágil: sujeto a refinamientos y cambios conforme avance el curso.
 > Fuente primaria del enunciado: 
 - https://github.com/anthonyOviedo/Expresso/blob/main/EIF400-II-2025_Expresso_Anexo_I_Inicial.pdf
-> Estudiantes 
+### Estudiantes 
 - Antony Oviedo Alfaro
-- Esteban Sanchez
-- Josh 
+- Esteban Francisco Sánchez Sánchez
+- Josh Gámez Sánchez
 ---
 
-## Versiones disponibles para instaladores 
+## Instaladores disponibles 
 
 ### version Alpha01
-> https://github.com/anthonyOviedo/Expresso/releases/edit/v0.1-alpha
+> https://github.com/anthonyOviedo/Expresso/releases/tag/v1.0_alpha
 
 ## Propósito
 **Expresso** es un *minilenguaje* compacto y expresivo, diseñado para practicar conceptos de programación funcional (tipos algebraicos, funciones y *pattern matching*) y para aprender cómo un **transpilador** convierte ideas de alto nivel en **código Java 23** legible y ejecutable. El objetivo es construir de forma incremental un **tooling CLI** que:
@@ -22,11 +22,17 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 
 ---
 
-## Requisitos para generar el Installador
+## Requisitos para generar un Installador
 - **JDK 23+** (desarrollo y *target*).  
 - **Maven**  
+### Generar un JAVA Jar
+```cmd
+mvn -B -DskipTests package
+```
 
-# Generar instalador en cmd
+### Generar instalador en cmd usando el Jar creado.
+
+```cmd
 set "OUT_DIR=%cd%\out"
 set "OBJ_DIR=%cd%\obj"
 set "DIST_DIR=%cd%\dist"
@@ -48,8 +54,7 @@ set "SRC=%OUT_DIR%\%APP_NAME%"
 "%WIX%\bin\heat.exe" dir "%SRC%" -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out harvest.wxs
 "%WIX%\bin\candle.exe" -arch x64 -dSourceDir="%SRC%" -out "%OBJ_DIR%\" packaging\windows\product.wxs harvest.wxs
 "%WIX%\bin\light.exe" -ext WixUtilExtension -sval -o "%DIST_DIR%\%APP_NAME%-1.0.msi" "%OBJ_DIR%\product.wixobj" "%OBJ_DIR%\harvest.wixobj"
-
--- 
+```
 
 ---
 

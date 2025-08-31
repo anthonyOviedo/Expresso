@@ -5,7 +5,7 @@
 
   <groupId>com.diezam04</groupId>
   <artifactId>expresso</artifactId>
-  <version>0.1.0</version>
+  <version>1.1.0</version>
   <packaging>jar</packaging>
 
   <properties>
