@@ -1,4 +1,4 @@
-package com.diezam04.expresso;
+package com.diezam04.expresso.core;
 
 public class Transpiler {
 
