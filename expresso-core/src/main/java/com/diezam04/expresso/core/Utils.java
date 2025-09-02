@@ -4,13 +4,13 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class Utils {
-    static private Boolean verbose;
+    static private Boolean verbose = true;
 
-    private static Utils instance = null;
-
-    static public void setVerbose(Boolean flag) {
+    public static void setVerbose(Boolean flag) {
         verbose = flag;
     }
 
@@ -23,9 +23,10 @@ public class Utils {
     }
     
     static public void log(String message, String state) {
-        if (getVerbose()){
-            message = " [" + state + "] " + message;
-             System.out.println(message);
+        if (getVerbose()) {
+            String timestamp = LocalDateTime.now()
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            System.out.println("[" + timestamp + "] [" + state + "] " + message);
         }
     }
 
@@ -59,7 +60,6 @@ public class Utils {
         try {
             String baseName = source.getName().split("\\.")[0];
 
-            if (baseName.equals("Expresor") || baseName.equals("xpr") || baseName.equals("expressor") || baseName.equals("expresso") ) {
             log("Reading file: " + source.getName());
             String content = Files.readString(source.toPath());
             if (!content.isBlank()) {
@@ -68,10 +68,7 @@ public class Utils {
             }else{  
                 log("File is empty " + source.getName(),"ERROR");
             }
-        }
-        else{
-                log("File extension is wrong" + source.getName(),"ERROR");
-        }
+
             
         } catch (IOException e) {
             System.err.println("Error reading file: "+ source.getName() + " ERORR: "+e.getMessage());
