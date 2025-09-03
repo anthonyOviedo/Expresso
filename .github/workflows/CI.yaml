@@ -2,13 +2,14 @@ name: CI and CDelivery for the CLI app.
 
 on:
   push:
-    branches: [dev]
+    branches: [main]
 
 env:
   APP_NAME: expressor
   MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
   VERSION: 1.1.2
-
+permissions:
+  contents: write
 jobs:
 
   build-jar:
@@ -172,7 +173,6 @@ jobs:
           path: dist/*.msi
           if-no-files-found: error
 
-
   Create-cli-Release:
     runs-on: ubuntu-latest
     needs:
@@ -213,7 +213,7 @@ jobs:
             artifacts/*.deb
             artifacts/*.msi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Discord notify (success)
         if: ${{ success() }}
