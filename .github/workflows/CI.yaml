@@ -7,7 +7,7 @@ on:
 env:
   APP_NAME: expressor
   MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
-  VERSION: 1.1
+  VERSION: 1.1.2
 
 jobs:
   build-jar:
@@ -44,7 +44,7 @@ jobs:
       - name: Upload JARs
         uses: actions/upload-artifact@v4
         with:
-          name: $APP_NAME-$VERSION.jar
+          name: ${{APP_NAME}}-${{VERSION}}.jar
           path: "expresso-cli/target/${{ steps.pick.outputs.jar_name }}"
           if-no-files-found: error
 
@@ -71,7 +71,7 @@ jobs:
       - name: Download JARs
         uses: actions/download-artifact@v4
         with:
-          name: app-jar
+          name: ${{APP_NAME}}-${{VERSION}}.jar
           path: target
 
       - name: Write Debian maintainer scripts (symlink in PATH)
