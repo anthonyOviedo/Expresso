@@ -1,4 +1,4 @@
-name: Build JAR -> package (.deb / .msi)
+name: Build JAR -> Cli version (.deb / .msi)
 
 on:
   push:
@@ -7,7 +7,8 @@ on:
 
 env:
   APP_NAME: expressor
-  MAIN_CLASS: com.diezam04.expresso.Expressor
+  MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
+  VERSION: 1.1
 
 jobs:
   build-jar:
@@ -87,8 +88,6 @@ jobs:
 
           chmod 755 packaging/postinst packaging/postrm
 
-
-
       - name: jpackage -> .deb (CLI only)
         shell: bash
         run: |
@@ -101,7 +100,7 @@ jobs:
             --input target \
             --main-jar "${{ needs.build-jar.outputs.jar_name }}" \
             --main-class "${MAIN_CLASS}" \
-            --app-version 1.1 \
+            --app-version "${VERSION}" \
             --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
             --resource-dir packaging \
             --dest dist \
@@ -110,7 +109,7 @@ jobs:
       - name: Upload .deb artifact
         uses: actions/upload-artifact@v4
         with:
-          name: linux-deb
+          name: $APP_NAME-$VERSION
           path: dist/*.deb
           if-no-files-found: error
   
@@ -160,13 +159,63 @@ jobs:
         run: |
           & "$env:WIX\bin\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" -out obj\ packaging/windows/product.wxs harvest.wxs
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\expressor-1.1.msi" obj\product.wixobj obj\harvest.wixobj
-
-
+          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\$APP_NAME-$VERSION.msi" obj\product.wixobj obj\harvest.wixobj
 
       - name: Upload .msi
         uses: actions/upload-artifact@v4
         with:
-          name: windows-msi
+          name: $APP_NAME-$VERSION
           path: dist/*.msi
           if-no-files-found: error
+
+      - name: Discord notify success (apps deployment)
+        if: success()
+        uses: Ilshidur/action-discord@0.3.2
+        with:
+          args: |
+            🖥️ ✅ App $APP_NAME-$VERSION PASSED the tests.
+            Commit `${{ github.sha }}`
+            Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+
+      - name: Discord notify failure (apps deployment)
+        if: failure()
+        uses: Ilshidur/action-discord@0.3.2
+        with:
+          args: |
+            🖥️ ❌ App $APP_NAME-$VERSION FAILED the tests.
+            Commit `${{ github.sha }}`
+            Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} 
+
+  create-Release:
+    runs-on: ubuntu-latest
+    needs:
+      - package-deb
+      - package-msi
+
+    steps:
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload java jar artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/*.jar
+
+      - name: Upload Linux deb installer artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/*.deb
+
+      
+      - name: Upload Windows msi installer artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/*.msi
