@@ -7,7 +7,7 @@ on:
 env:
   APP_NAME: expressor
   MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
-  VERSION: v1.1.2
+  VERSION: 1.1.2
 
 permissions:
   contents: write
