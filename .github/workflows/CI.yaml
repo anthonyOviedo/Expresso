@@ -2,7 +2,7 @@ name: CI and CDelivery for the CLI app.
 
 on:
   push:
-    branches: [main]
+    branches: [dev]
 
 env:
   APP_NAME: expressor
