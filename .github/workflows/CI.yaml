@@ -215,6 +215,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
+      # 🧹 Auto-clean artifacts after successful upload
+      - name: Delete uploaded artifacts
+        if: ${{ success() }}
+        uses: geekyeggo/delete-artifact@v4
+        with:
+          name: |
+            ${{ env.APP_NAME }}-${{ env.VERSION }}.jar
+            ${{ env.APP_NAME }}-${{ env.VERSION }}.deb
+            ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
+
       - name: Discord notify (success)
         if: ${{ success() }}
         uses: Ilshidur/action-discord@0.3.2
@@ -242,5 +252,4 @@ jobs:
             • Ref: `${{ github.ref_name }}`
             • Author: ${{ github.actor }}
             • Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
 
