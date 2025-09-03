@@ -204,8 +204,8 @@ jobs:
         id: gh_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v${{ env.VERSION }}"
-          target_commitish: ${{ github.sha }}
+          tag_name: "v${{ env.VERSION }}"          # <-- create/use this tag
+          target_commitish: ${{ github.sha }}      # <-- point tag to this commit
           name: "${{ env.APP_NAME }} v${{ env.VERSION }}"
           generate_release_notes: true
           files: |
@@ -222,11 +222,12 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
           args: |
-            ✅ **Release created**   ${{ steps.gh_release.outputs.html_url }}
+            ✅ **Release created**
             • App: **${{ env.APP_NAME }}** v${{ env.VERSION }}
             • Tag: `v${{ env.VERSION }}`
             • Author: ${{ github.actor }}
             • Commit: `${{ github.sha }}`
+            • Release: ${{ steps.gh_release.outputs.html_url }}
             • Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       - name: Discord notify (failure)
