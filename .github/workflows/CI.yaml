@@ -175,7 +175,7 @@ jobs:
           path: dist/*.msi
           if-no-files-found: error
 
-  Create-cli-Release:
+  Release:
     runs-on: ubuntu-latest
     needs: [cli-installer-deb, cli-installer-msi]
 
