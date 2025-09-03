@@ -10,6 +10,7 @@ env:
   VERSION: 1.1.2
 
 jobs:
+
   build-jar:
     runs-on: ubuntu-latest
     outputs:
@@ -47,9 +48,6 @@ jobs:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
           path: "expresso-cli/target/${{ steps.pick.outputs.jar_name }}"
           if-no-files-found: error
-
-
-
 
   cli-installer-deb:
     needs: build-jar
@@ -165,7 +163,7 @@ jobs:
         run: |
           & "$env:WIX\bin\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" -out obj\ packaging/windows/product.wxs harvest.wxs
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\$APP_NAME-$VERSION.msi" obj\product.wixobj obj\harvest.wixobj
+          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\${{env.APP_NAME}}-${{env.VERSION}}.msi" obj\product.wixobj obj\harvest.wixobj
 
       - name: Upload .msi
         uses: actions/upload-artifact@v4
