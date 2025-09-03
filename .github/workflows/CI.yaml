@@ -7,9 +7,11 @@ on:
 env:
   APP_NAME: expressor
   MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
-  VERSION: 1.1.2
+  VERSION: v1.1.2
+
 permissions:
   contents: write
+  actions: write
 jobs:
 
   build-jar:
@@ -215,7 +217,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      # 🧹 Auto-clean artifacts after successful upload
       - name: Delete uploaded artifacts
         if: ${{ success() }}
         uses: geekyeggo/delete-artifact@v4
