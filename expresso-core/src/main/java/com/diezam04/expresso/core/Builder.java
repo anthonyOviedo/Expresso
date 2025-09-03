@@ -10,11 +10,6 @@ import javax.tools.ToolProvider;
 
 public class Builder {
 
-    /**
-     * Compila un archivo Java y genera el correspondiente .class.
-     * @param javaFileString código fuente en Java
-     * @return ruta absoluta del archivo .class generado o "" si falla
-     */
     public static String run(String javaFileString) {
         if (javaFileString == null || javaFileString.isBlank()) {
             Utils.log("Build received empty source", "ERROR");
@@ -25,22 +20,15 @@ public class Builder {
 
     private static String compileJava(String javaSource) {
         try {
-            // Crear directorio temporal
             Path tempDir = Files.createTempDirectory("expresso_build");
-
-            // Nombre de clase pública principal
             String rawName = Utils.extractClassName(javaSource).orElse("Main");
-            // Limpiar nombre para evitar caracteres inválidos
             String className = rawName.replaceAll("[^a-zA-Z0-9_$]", "");
-
             Path javaFile = tempDir.resolve(className + ".java");
 
-            // Guardar el código fuente en el archivo .java
             try (FileWriter writer = new FileWriter(javaFile.toFile())) {
                 writer.write(javaSource);
             }
 
-            // Compilador de Java
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
             if (compiler == null) {
                 Utils.log("JavaCompiler not available. Use a JDK instead of JRE.", "ERROR");
