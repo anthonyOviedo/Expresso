@@ -204,6 +204,9 @@ jobs:
         id: gh_release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: "v${{ env.VERSION }}"
+          target_commitish: ${{ github.sha }}
+          name: "${{ env.APP_NAME }} v${{ env.VERSION }}"
           generate_release_notes: true
           files: |
             artifacts/*.jar
