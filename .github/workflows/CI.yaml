@@ -196,7 +196,7 @@ jobs:
       - name: Download .msi
         uses: actions/download-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-${{ env.VERSION }}
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
           path: artifacts
 
       - name: Create GitHub Release + upload assets
