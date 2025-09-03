@@ -168,7 +168,7 @@ jobs:
       - name: Upload .msi
         uses: actions/upload-artifact@v4
         with:
-          name: $APP_NAME-$VERSION
+          name: ${{env.APP_NAME}}-${{env.VERSION}}.msi
           path: dist/*.msi
           if-no-files-found: error
 
