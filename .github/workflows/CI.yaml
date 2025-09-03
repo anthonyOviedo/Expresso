@@ -1,9 +1,8 @@
-name: Build JAR -> Cli version (.deb / .msi)
+name: CI and CDelivery for the CLI app.
 
 on:
   push:
-    branches: [ main ]
-
+    branches: [dev]
 
 env:
   APP_NAME: expressor
@@ -45,7 +44,7 @@ jobs:
           path: target/*.jar
           if-no-files-found: error
 
-  package-deb:
+  cli-installer-deb:
     needs: build-jar
     runs-on: ubuntu-latest
     steps:
@@ -113,7 +112,7 @@ jobs:
           path: dist/*.deb
           if-no-files-found: error
   
-  package-msi:
+  cli-installer-msi:
     needs: build-jar
     runs-on: windows-latest
     steps:
@@ -190,11 +189,11 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} 
 
-  create-Release:
+  create-cli-Release:
     runs-on: ubuntu-latest
     needs:
-      - package-deb
-      - package-msi
+      - cli-installer-deb
+      - cli-installer-msi
 
     steps:
       - name: Create GitHub Release
