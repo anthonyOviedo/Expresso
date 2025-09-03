@@ -44,7 +44,7 @@ jobs:
       - name: Upload JARs
         uses: actions/upload-artifact@v4
         with:
-          name: "${{APP_NAME}}-${{VERSION}}.jar"
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
           path: "expresso-cli/target/${{ steps.pick.outputs.jar_name }}"
           if-no-files-found: error
 
