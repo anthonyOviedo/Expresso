@@ -31,10 +31,7 @@ jobs:
         id: pick
         shell: bash
         run: |
-          set -e
-          jar=$(ls -1 target/*-runner.jar 2>/dev/null || true)
-          if [ -z "$jar" ]; then jar=$(ls -1 target/*.jar | head -n1); fi
-          test -n "$jar" || { echo "No JAR found in target/"; exit 1; }
+          jar=$(ls -1 target/*.jar 2>/dev/null)
           echo "jar_name=$(basename "$jar")" >> "$GITHUB_OUTPUT"
 
       - name: Upload JARs
