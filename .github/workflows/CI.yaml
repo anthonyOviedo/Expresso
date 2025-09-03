@@ -138,7 +138,7 @@ jobs:
       - name: Download JARs
         uses: actions/download-artifact@v4
         with:
-          name: app-jar
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
           path: target
 
       - name: jpackage -> app-image (CLI-only)
