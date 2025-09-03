@@ -27,21 +27,28 @@ jobs:
       - name: Build with Maven
         run: mvn -B -DskipTests package
 
-      - name: Pick main JAR (prefer *-runner.jar)
+      - name: Pick main JAR
         id: pick
         shell: bash
+        run: echo "jar_name=$(basename $(ls expresso-cli/target/*.jar 2>/dev/null || ls expresso-cli/target/*.jar | head -n1))" >> "$GITHUB_OUTPUT"
+
+      - name: Test JAR
         run: |
-          jar=$(find . -type f \( -path "*/target/*-runner.jar" -o -path "*/target/*-shaded.jar" -o -path "*/target/*.jar" \) | head -n1)
-          test -n "$jar"
-          echo "jar_name=$(basename "$jar")" >> "$GITHUB_OUTPUT"
-          echo "jar_path=$jar" >> "$GITHUB_OUTPUT"
+          echo "Testing ${{ steps.pick.outputs.jar_name }}"
+          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}"
+          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" --help
+          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" transpile --out output HelloWorld.Expresso --verbose
+          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" build --out output HelloWorld.Expresso --verbose
+          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" run --out output HelloWorld.Expresso --verbose
 
       - name: Upload JARs
         uses: actions/upload-artifact@v4
         with:
           name: $APP_NAME-$VERSION.jar
-          path: ${{ steps.pick.outputs.jar_path }}/${{ steps.pick.outputs.jar_name }}
+          path: "expresso-cli/target/${{ steps.pick.outputs.jar_name }}"
           if-no-files-found: error
+
+
 
 
   cli-installer-deb:
