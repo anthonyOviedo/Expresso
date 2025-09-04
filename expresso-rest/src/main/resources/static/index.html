@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Expresso Web UI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Expresso Web UI</h1>
+    <button id="btnTheme">Toggle Theme</button>
+  </header>
+
+  <main>
+    <div class="panel">
+      <header>Editor</header>
+      <textarea id="editor">public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello from Expresso!");
+    }
+}
+</textarea>
+      <div class="toolbar">
+        <button id="btnTranspile">Transpile</button>
+        <button id="btnBuild">Build</button>
+        <button id="btnRun">Run</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <header>Output</header>
+        <textarea id="output" readonly></textarea>
+      <div class="toolbar">
+        <button id="btnCopy">Copy</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="index.js"></script>
+</body>
+</html>
