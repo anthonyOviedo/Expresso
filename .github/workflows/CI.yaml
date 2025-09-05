@@ -2,12 +2,12 @@ name: CI and CDelivery for the CLI app.
 
 on:
   push:
-    branches: [dev]
+    branches: [main]
 
 env:
   APP_NAME: expressor
   MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
-  VERSION: 1.1.2
+  VERSION: 2.1
 
 permissions:
   contents: write
