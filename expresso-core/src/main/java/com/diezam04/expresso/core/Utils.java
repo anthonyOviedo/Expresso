@@ -1,9 +1,10 @@
 package com.diezam04.expresso.core;
-import java.io.File;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -21,7 +22,7 @@ public class Utils {
     static public void log(String message) {
         log(message, "INFO");
     }
-    
+
     static public void log(String message, String state) {
         if (getVerbose()) {
             String timestamp = LocalDateTime.now()
@@ -30,6 +31,7 @@ public class Utils {
         }
     }
 
+  
     static public Integer writeFile(java.io.File source, String content, String extension, String outDir) {
         String baseName = source.getName().split("\\.")[0];
         log("writing file " + baseName, "INFO");
@@ -44,19 +46,26 @@ public class Utils {
 
         java.io.File outFile = new java.io.File(outFolder, baseName + "." + extension);
 
-        try (FileWriter writer = new FileWriter(outFile)) {
-            writer.write(content);
-            log("File " + outFile.getAbsolutePath() + " created successfully");
+        try {
+            if ("class".equals(extension)) {
+                
+                Path generatedClassPath = Path.of(content);
+                Files.copy(generatedClassPath, outFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                log("Binary file " + outFile.getAbsolutePath() + " created successfully");
+            } else {
+                try (FileWriter writer = new FileWriter(outFile)) {
+                    writer.write(content);
+                }
+                log("File " + outFile.getAbsolutePath() + " created successfully");
+            }
             return 0;
         } catch (IOException e) {
             System.err.println("Error writing file: " + e.getMessage());
             return 1;
         }
-
     }
 
     static public String loadFile(java.io.File source) {
-
         try {
             String baseName = source.getName().split("\\.")[0];
 
@@ -65,15 +74,33 @@ public class Utils {
             if (!content.isBlank()) {
                 log("File loaded: " + source.getName());
                 return content;
-            }else{  
-                log("File is empty " + source.getName(),"ERROR");
+            } else {
+                log("File is empty " + source.getName(), "ERROR");
             }
 
-            
         } catch (IOException e) {
-            System.err.println("Error reading file: "+ source.getName() + " ERORR: "+e.getMessage());
+            System.err.println("Error reading file: " + source.getName() + " ERORR: " + e.getMessage());
         }
         return null;
     }
+
+    
+    static public java.util.Optional<String> extractClassName(String javaSource) {
+        return java.util.Arrays.stream(javaSource.split("\\R"))
+                .filter(line -> line.trim().startsWith("public class"))
+                .map(line -> line.replace("public class", "").trim().split(" ")[0])
+                .findFirst();
+    }
+
+    public static File tempFile(String content, String ext) {
+    try {
+        File tmp = File.createTempFile("expresso-", ext);
+        try (FileWriter fw = new FileWriter(tmp)) { fw.write(content); }
+        return tmp;
+    } catch (IOException e) {
+        throw new RuntimeException(e);
+    }
+
+}
 
 }

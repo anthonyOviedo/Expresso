@@ -10,6 +10,8 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 ---
 
 ## Instaladores disponibles 
+### version 2.1
+
 ### version 1.1
 > https://github.com/anthonyOviedo/Expresso/releases/tag/v1.1
 ### version Alpha01
@@ -27,16 +29,21 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 - **JDK 23+** (desarrollo y *target*).  
 - **Maven**  
 ### Generar un JAVA Jar
+
+
 ```cmd
+cd /Expresso
 mvn -B -DskipTests package
 ```
 
-### Generar instalador en cmd usando el Jar creado.
-
+### Generar Cli installer en cmd usando el Jar creado.
 ```cmd
 set "OUT_DIR=%cd%\out"
 set "OBJ_DIR=%cd%\obj"
 set "DIST_DIR=%cd%\dist"
+set "APP_NAME=expresso"
+set "JAR_NAME=.jar"
+set "MAIN_CLASS=com.diezam04.expresso.adapters.cli.Cli"
 mkdir "%OUT_DIR%"
 mkdir "%OBJ_DIR%"
 mkdir "%DIST_DIR%"
@@ -58,6 +65,8 @@ set "SRC=%OUT_DIR%\%APP_NAME%"
 ```
 
 ---
+## Ejecutar el instalador generado 
+Hacer doble click en el expresso.msi para instalar de Expresso
 
 ## Uso basico del CLI `expressor`
 > El CLI es una aplicación **Java** (no *shell script*). Los siguientes comandos son parte del **Sprint Inicial** como *mocks* funcionales.
