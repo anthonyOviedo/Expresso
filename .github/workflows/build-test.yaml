@@ -8,7 +8,7 @@ env:
   MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
 
 jobs:
-  build-jar:
+  build-cli-jar:
     runs-on: ubuntu-latest
     outputs:
       jar_name: ${{ steps.pick.outputs.jar_name }}
@@ -23,15 +23,15 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        run: mvn -B -DskipTests package
+        run: mvn clean install -DskipTests
       
-      - name: Pick main JAR
+      - name: Pick main cli JAR
         id: pick
         shell: bash
         run: echo "jar_name=$(basename $(ls expresso-cli/target/*.jar 2>/dev/null || ls expresso-cli/target/*.jar | head -n1))" >> "$GITHUB_OUTPUT"
 
 
-      - name: Test JAR
+      - name: Test Cli JAR
         run: |
           echo "Testing ${{ steps.pick.outputs.jar_name }}"
           java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}"
