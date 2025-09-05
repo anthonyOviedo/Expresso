@@ -8,7 +8,8 @@
   <parent>
     <groupId>com.diezam04.expresso</groupId>
     <artifactId>expresso</artifactId>
-    <version>1.0.0</version>
+    <version>0.1.0</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>expresso-core</artifactId>
   <packaging>jar</packaging>
