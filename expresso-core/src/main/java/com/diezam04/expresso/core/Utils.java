@@ -1,5 +1,6 @@
 package com.diezam04.expresso.core;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -90,4 +91,16 @@ public class Utils {
                 .map(line -> line.replace("public class", "").trim().split(" ")[0])
                 .findFirst();
     }
+
+    public static File tempFile(String content, String ext) {
+    try {
+        File tmp = File.createTempFile("expresso-", ext);
+        try (FileWriter fw = new FileWriter(tmp)) { fw.write(content); }
+        return tmp;
+    } catch (IOException e) {
+        throw new RuntimeException(e);
+    }
+
+}
+
 }
