@@ -1,20 +1,12 @@
-# ---------- Build stage ----------
-FROM eclipse-temurin:23-jdk AS build
-
-WORKDIR /src
-# Copy source
-COPY src/HelloWorld.java .
-
-# Compile and package into a runnable JAR with Main-Class set
-RUN javac HelloWorld.java \
- && jar --create --file app.jar --main-class=HelloWorld HelloWorld.class
-
-# ---------- Runtime stage ----------
-FROM eclipse-temurin:23-jre AS run
+# Use full JDK, not JRE
+FROM eclipse-temurin:23-jdk
 
 WORKDIR /app
-# Bring only the built artifact
-COPY --from=build /src/app.jar ./app.jar
+
+# Copy only the built artifact from Maven build
+COPY expresso-rest/target/expresso*.jar app.jar
+
+EXPOSE 8080
 
 # Run it
-CMD ["java", "-jar", "app.jar"] 
+CMD ["java", "-jar", "app.jar"]

@@ -11,7 +11,7 @@ async function post(path) {
     const res = await fetch(path, {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
-      body: $("editor").value
+      body: "public class Main {public static void main(String[] args) {" + $("editor").value  + "}}"
     });
 
     // If server signals a download, save it
