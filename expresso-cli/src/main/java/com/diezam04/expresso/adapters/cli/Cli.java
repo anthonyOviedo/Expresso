@@ -1,22 +1,22 @@
 package com.diezam04.expresso.adapters.cli;
 
 import java.io.File;
+import java.util.Optional;
+import java.util.function.Function;
+
+import com.diezam04.expresso.core.Builder;
+import com.diezam04.expresso.core.Runner;
+import com.diezam04.expresso.core.Transpiler;
+import com.diezam04.expresso.core.Utils;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import com.diezam04.expresso.core.Transpiler;
-import com.diezam04.expresso.core.Builder;
-import com.diezam04.expresso.core.Runner;
-import com.diezam04.expresso.core.Utils;
-
-
 @Command(name = "expressor", mixinStandardHelpOptions = true,
          version = "expressor 1.1",
          description = "Custom CLI tool")
-         
 public class Cli implements Runnable {
 
     public static void main(String[] args) {
@@ -28,63 +28,52 @@ public class Cli implements Runnable {
         CommandLine.usage(this, System.out);
     }
 
-     @Command(name = "transpile", description = "Transpile a source file from expressor to java")
-    public Integer transpile(@Parameters(index = "0", paramLabel = "SOURCE",
-                                         description = "The source file to transpile") java.io.File source,
-                             @Option(names = "--out", description = "Output directory (default: current directory)") String outDir,
-                             @Option(names = "--verbose", description = "Show detailed execution steps") boolean verbose) {
-        Utils.log("Starting transpile...");
-        if (outDir == null) outDir = ".";
-        String file = Utils.loadFile(source);
-        if (file == null){
-            Utils.log("File is empty");
-            return 1;
-        }
-        return Utils.writeFile(source, Transpiler.run(file), "java", outDir);
+    private Integer processFile(File source, String outDir, String extension,
+                                Function<String, String> transformer,
+                                boolean verbose, Runnable postProcess) {
+        Utils.log("Processing: " + source.getName());
+        String finalOut = Optional.ofNullable(outDir).orElse(".");
+
+        return Optional.ofNullable(Utils.loadFile(source))
+            .map(transformer)
+            .map(content -> Utils.writeFile(source, content, extension, finalOut))
+            .map(status -> {
+                if (status == 0 && postProcess != null) postProcess.run();
+                return status;
+            })
+            .orElseGet(() -> {
+                Utils.log("File is empty");
+                return 1;
+            });
     }
 
+    @Command(name = "transpile", description = "Transpile a source file from expressor to java")
+    public Integer transpile(@Parameters(index = "0", paramLabel = "SOURCE") File source,
+                             @Option(names = "--out") String outDir,
+                             @Option(names = "--verbose") boolean verbose) {
+        return processFile(source, outDir, "java", Transpiler::run, verbose, null);
+    }
 
     @Command(name = "build", description = "Build a source file, it generates a .class")
-    public Integer build(@Parameters(index = "0", paramLabel = "SOURCE",
-                                     description = "The source file to build") java.io.File source,
-                         @Option(names = "--out", description = "Output directory (default: current directory)") String outDir,
-                         @Option(names = "--verbose", description = "Show detailed execution steps") boolean verbose) {
-        Utils.log("Starting build...");
-        if (outDir == null) outDir = ".";
-        String file = Utils.loadFile(source);
-        if (file == null){
-            Utils.log("File is empty");
-            return 1;
-        }
-        return Utils.writeFile(source, Builder.run(Transpiler.run(file)), "class", outDir);
+    public Integer build(@Parameters(index = "0", paramLabel = "SOURCE") File source,
+                         @Option(names = "--out") String outDir,
+                         @Option(names = "--verbose") boolean verbose) {
+        return processFile(source, outDir, "class", file -> Builder.run(Transpiler.run(file)), verbose, null);
     }
 
-
-     @Command(name = "run", description = "Run a source file, executes .class files")
-     public Integer run(@Parameters(index = "0", paramLabel = "SOURCE",
-                                    description = "The source file to run") java.io.File source,
-                        @Option(names = "--out", description = "Output directory (default: current directory)") String outDir,
-                        @Option(names = "--verbose", description = "Show detailed execution steps") boolean verbose) {
-         Utils.log("Starting run...");
-         if (outDir == null) outDir = ".";
-         try {
-             String file = Utils.loadFile(source);
-             if (file == null){
-                 Utils.log("File is empty");
-                 return 1;
-             }    
-             String content = Builder.run(Transpiler.run(Utils.loadFile(source)));
-             int status = Utils.writeFile(source, content, "class", outDir);
-             if (status == 0) {
-                 String baseName = source.getName().replaceFirst("\\.[^.]+$", ""); // quita extensión original
-                 File outFile = new File(outDir, baseName + ".class");
-                 Runner.run(outFile.getAbsolutePath());
-             }
-         } catch (Exception e) {
-             System.err.println("Execution error: " + e.getMessage());
-             return 1;
-         }
-         Utils.log("Execution completed successfully");
-         return 0;
-     }
- }
+    @Command(name = "run", description = "Run a source file, executes .class files")
+    public Integer run(@Parameters(index = "0", paramLabel = "SOURCE") File source,
+                       @Option(names = "--out") String outDir,
+                       @Option(names = "--verbose") boolean verbose) {
+        return processFile(source, outDir, "class", file -> Builder.run(Transpiler.run(file)), verbose, () -> {
+            try {
+                String baseName = source.getName().replaceFirst("\\.[^.]+$", "");
+                File outFile = new File(Optional.ofNullable(outDir).orElse("."), baseName + ".class");
+                Runner.run(outFile.getAbsolutePath());
+                Utils.log("Execution completed successfully");
+            } catch (Exception e) {
+                System.err.println("Execution error: " + e.getMessage());
+            }
+        });
+    }
+}
