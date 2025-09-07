@@ -30,7 +30,7 @@ public class Cli implements Runnable {
 
     private Integer processFile(File source, String outDir, String extension,
                                 Function<String, String> transformer,
-                                boolean verbose, Runnable postProcess) {
+                                Runnable postProcess) {
         Utils.log("Processing: " + source.getName());
         String finalOut = Optional.ofNullable(outDir).orElse(".");
 
@@ -51,21 +51,24 @@ public class Cli implements Runnable {
     public Integer transpile(@Parameters(index = "0", paramLabel = "SOURCE") File source,
                              @Option(names = "--out") String outDir,
                              @Option(names = "--verbose") boolean verbose) {
-        return processFile(source, outDir, "java", Transpiler::run, verbose, null);
+        Utils.setVerbose(verbose);
+        return processFile(source, outDir, "java", Transpiler::run, null);
     }
 
     @Command(name = "build", description = "Build a source file, it generates a .class")
     public Integer build(@Parameters(index = "0", paramLabel = "SOURCE") File source,
                          @Option(names = "--out") String outDir,
                          @Option(names = "--verbose") boolean verbose) {
-        return processFile(source, outDir, "class", file -> Builder.run(Transpiler.run(file)), verbose, null);
+        Utils.setVerbose(verbose);
+        return processFile(source, outDir, "class", file -> Builder.run(Transpiler.run(file)), null);
     }
 
     @Command(name = "run", description = "Run a source file, executes .class files")
     public Integer run(@Parameters(index = "0", paramLabel = "SOURCE") File source,
                        @Option(names = "--out") String outDir,
                        @Option(names = "--verbose") boolean verbose) {
-        return processFile(source, outDir, "class", file -> Builder.run(Transpiler.run(file)), verbose, () -> {
+        Utils.setVerbose(verbose);
+        return processFile(source, outDir, "class", file -> Builder.run(Transpiler.run(file)), () -> {
             try {
                 String baseName = source.getName().replaceFirst("\\.[^.]+$", "");
                 File outFile = new File(Optional.ofNullable(outDir).orElse("."), baseName + ".class");
