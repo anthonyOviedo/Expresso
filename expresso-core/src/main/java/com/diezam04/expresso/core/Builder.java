@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 
-class Builder {
+public class Builder {
 
     public static String run(String javaFileString) {
         if (javaFileString == null || javaFileString.isBlank()) {
