@@ -1,6 +1,6 @@
 classDiagram
 %% =======================
-%% Paquetes / namespaces
+%% Paquetes / namespaces 
 %% =======================
 
 namespace expresso{
@@ -11,43 +11,66 @@ namespace expresso{
 
 namespace expresso.Cli {
   class Cli {
-    +cli(... "options") void
-    +loadFile(String fileName) File
-    +writeFile(File f) bool
-    +transpileCommand(File f) void
-    +buildCommand(File f) void
-    +runCommand(File f) void
+    +main(String[] args) void
+    +run() void
+    -processFile(File source, String outDir, String extension, Function<String,String> transformer, Runnable postProcess) Integer
+    +transpile(File source, String outDir, boolean verbose) Integer
+    +build(File source, String outDir, boolean verbose) Integer
+    +run(File source, String outDir, boolean verbose) Integer
   }
 }
 
-
 namespace expresso.Transpiler {
   class Transpiler {
-    +transpile(File .expresso) File .java
+    +run(String expressoFileOrContent) String
   }
 }
 
 namespace expresso.Builder {
   class Builder {
-    +build(File .java) File .class
+    +run(String javaSource) String
   }
 }
 
 namespace expresso.Runner {
   class Runner {
-    +run(File .class) String
+    +run(String classFilePath) String
+  }
+}
+
+namespace expresso.Tester {
+  class Tester {
+    +test(String classFilePath) boolean
+  }
+}
+
+namespace expresso.Utils {
+  class Utils {
+    +setVerbose(Boolean) void
+    +getVerbose() Boolean
+    +log(String message, String state) void
+    +writeFile(File source, String content, String extension, String outDir) int
+    +loadFile(File source) String
+    +extractClassName(String javaSource) Optional~String~
+    +tempFile(String content, String ext) File
+    +hasAllowedSourceExtension(File f) boolean
   }
 }
 
 %% =======================
-%% Relaciones internas
+%% Relaciones internas 
 %% =======================
 Expressor ..> Cli : usa
-Cli ..> Transpiler : usa
-Cli ..> Builder  : usa
-Cli ..> Runner     : orquesta
+Cli ..> Transpiler : usa (transpile)
+Cli ..> Builder : usa (build)
+Cli ..> Runner : orquesta (run)
+Cli ..> Utils : usa (logs, load/write)
 
-Builder ..> Transpiler : invoca
-Runner    ..> Builder  : invoca
+Builder ..> Transpiler : puede invocar / depende (Builder.run usa código generado por Transpiler)
+Builder ..> Utils : usa
 
-
+Transpiler ..> Utils : usa (loadFile, validaciones)
+Runner ..> Tester : valida antes de ejecutar
+Tester ..> Builder : verifica/relacion con salida de Builder (.class)
+Tester ..> Utils : usa (logs)
+Runner ..> Utils : usa (logs)

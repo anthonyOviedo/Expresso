@@ -20,6 +20,11 @@ public class Builder {
 
     private static String compileJava(String javaSource) {
         try {
+            if (!javaSource.contains("class")) {
+                Utils.log("Build source does not contain 'class' keyword", "ERROR");
+                return "";
+            }
+
             Path tempDir = Files.createTempDirectory("expresso_build");
             String rawName = Utils.extractClassName(javaSource).orElse("Main");
             String className = rawName.replaceAll("[^a-zA-Z0-9_$]", "");
