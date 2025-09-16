@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 
-public class Builder {
+class Builder {
 
     public static String run(String javaFileString) {
         if (javaFileString == null || javaFileString.isBlank()) {
@@ -20,6 +20,11 @@ public class Builder {
 
     private static String compileJava(String javaSource) {
         try {
+            if (!javaSource.contains("class")) {
+                Utils.log("Build source does not contain 'class' keyword", "ERROR");
+                return "";
+            }
+
             Path tempDir = Files.createTempDirectory("expresso_build");
             String rawName = Utils.extractClassName(javaSource).orElse("Main");
             String className = rawName.replaceAll("[^a-zA-Z0-9_$]", "");
