@@ -1,26 +1,44 @@
 grammar Expr;
 
+// ---- Parser ----
+prog: stat* EOF ;
 
-// Punto de entrada: cero o más sentencias terminadas por NEWLINE
-prog : stat* EOF ;
+stat
+    : 'let' ID '=' expr NEWLINE       # letStat
+    | 'print' expr NEWLINE            # printStat
+    | expr NEWLINE                    # exprStat
+    | NEWLINE                         # blankStat
+    ;
 
+expr
+    : '-' expr                        # unaryMinus
+    | expr '**' expr                  # power              
+    | expr op=('*'|'/') expr          # MulDiv
+    | expr op=('+'|'-') expr          # AddSub
+    | expr '?' expr ':' expr          # ternary
+    | params '->' expr                # lambda
+    | INT                             # int
+    | ID                              # idRef
+    | '(' expr ')'                    # parens
+    ;
 
-// Una sentencia puede ser una expresión -> imprimir, o línea vacía
-stat : expr NEWLINE         # printExpr
-       | NEWLINE            # blank
-;
+params
+    : ID
+    | '(' (ID (',' ID)*)? ')'
+    ;
 
+// ---- Lexer ----
+LET: 'let' ;
+PRINT: 'print' ;
 
-// Expresiones con precedencia y unario '-'
-expr :    '-' expr 					# unaryMinus
-		| expr op=('*'|'/') expr 	# MulDiv
-		| expr op=('+'|'-') expr 	# AddSub
-		| INT # int
-		| '(' expr ')' 				# parens
-;
+ID: [a-zA-Z_] [a-zA-Z_0-9]* ;
 
+INT: [0-9]+ ;
 
-// LEXER
-INT : [0-9]+ ;
 NEWLINE: ('\r'? '\n') ;
-WS : [ \t]+ -> skip ;
+
+WS: [ \t\r]+ -> skip ;
+
+LINE_COMMENT: '//' ~[\r\n]* -> skip ;
+BLOCK_COMMENT: '/*' .*? '*/' -> skip ;
+
