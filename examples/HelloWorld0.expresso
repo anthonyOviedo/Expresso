@@ -1,0 +1,7 @@
+// HelloWorld0.expresso
+let x = 666
+print(x)   // Expected 666 in console
+let y = 10
+print(y)   // Expected 10 in console
+let f = z -> z ** 2 + 2*z + 1
+print(f(x) + f(y)) // expected 445010

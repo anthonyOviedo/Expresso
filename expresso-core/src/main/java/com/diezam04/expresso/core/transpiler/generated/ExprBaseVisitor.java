@@ -1,6 +1,5 @@
-package com.diezam04.expresso.core.transpiler.generated;
-
 // Generated from grammar/Expr.g4 by ANTLR 4.13.2
+package com.diezam04.expresso.core.transpiler.generated;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
@@ -26,14 +25,35 @@ public class ExprBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements E
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitPrintExpr(ExprParser.PrintExprContext ctx) { return visitChildren(ctx); }
+	@Override public T visitLetStat(ExprParser.LetStatContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitBlank(ExprParser.BlankContext ctx) { return visitChildren(ctx); }
+	@Override public T visitPrintStat(ExprParser.PrintStatContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitExprStat(ExprParser.ExprStatContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitBlankStat(ExprParser.BlankStatContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitLambda(ExprParser.LambdaContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -68,5 +88,33 @@ public class ExprBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements E
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitPower(ExprParser.PowerContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitTernary(ExprParser.TernaryContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitInt(ExprParser.IntContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitIdRef(ExprParser.IdRefContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitParams(ExprParser.ParamsContext ctx) { return visitChildren(ctx); }
 }

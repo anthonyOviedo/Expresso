@@ -7,13 +7,14 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 import com.diezam04.expresso.core.transpiler.generated.ExprBaseVisitor;
 import com.diezam04.expresso.core.transpiler.generated.ExprParser;
-import com.diezam04.expresso.core.transpiler.src.ast.BinaryOper;
-import com.diezam04.expresso.core.transpiler.src.ast.Node;
-import com.diezam04.expresso.core.transpiler.src.ast.Num;
-import com.diezam04.expresso.core.transpiler.src.ast.Oper;
-import com.diezam04.expresso.core.transpiler.src.ast.Operation;
-import com.diezam04.expresso.core.transpiler.src.ast.Program;
-import com.diezam04.expresso.core.transpiler.src.ast.UnaryOper;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.BinaryOper;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.Node;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.Num;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.Oper;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.Operation;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.Program;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.UnaryOper;
 
 public final class AstBuilder extends ExprBaseVisitor<Node> {
 
@@ -34,12 +35,22 @@ public final class AstBuilder extends ExprBaseVisitor<Node> {
     }
 
     @Override
-    public Node visitPrintExpr(ExprParser.PrintExprContext ctx) {
+    public Node visitLetStat(ExprParser.LetStatContext ctx) {
         return visit(ctx.expr());
     }
 
     @Override
-    public Node visitBlank(ExprParser.BlankContext ctx) {
+    public Node visitPrintStat(ExprParser.PrintStatContext ctx) {
+        return visit(ctx.expr());
+    }
+
+    @Override
+    public Node visitExprStat(ExprParser.ExprStatContext ctx) {
+        return visit(ctx.expr());
+    }
+
+    @Override
+    public Node visitBlankStat(ExprParser.BlankStatContext ctx) {
         return null;
     }
 

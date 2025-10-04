@@ -1,6 +1,5 @@
-package com.diezam04.expresso.core.transpiler.generated;
-
 // Generated from grammar/Expr.g4 by ANTLR 4.13.2
+package com.diezam04.expresso.core.transpiler.generated;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -30,25 +29,61 @@ public class ExprBaseListener implements ExprListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterPrintExpr(ExprParser.PrintExprContext ctx) { }
+	@Override public void enterLetStat(ExprParser.LetStatContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitPrintExpr(ExprParser.PrintExprContext ctx) { }
+	@Override public void exitLetStat(ExprParser.LetStatContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBlank(ExprParser.BlankContext ctx) { }
+	@Override public void enterPrintStat(ExprParser.PrintStatContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBlank(ExprParser.BlankContext ctx) { }
+	@Override public void exitPrintStat(ExprParser.PrintStatContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExprStat(ExprParser.ExprStatContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprStat(ExprParser.ExprStatContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBlankStat(ExprParser.BlankStatContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBlankStat(ExprParser.BlankStatContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterLambda(ExprParser.LambdaContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitLambda(ExprParser.LambdaContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -102,6 +137,30 @@ public class ExprBaseListener implements ExprListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterPower(ExprParser.PowerContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPower(ExprParser.PowerContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTernary(ExprParser.TernaryContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTernary(ExprParser.TernaryContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterInt(ExprParser.IntContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -109,6 +168,30 @@ public class ExprBaseListener implements ExprListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitInt(ExprParser.IntContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterIdRef(ExprParser.IdRefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitIdRef(ExprParser.IdRefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterParams(ExprParser.ParamsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitParams(ExprParser.ParamsContext ctx) { }
 
 	/**
 	 * {@inheritDoc}
