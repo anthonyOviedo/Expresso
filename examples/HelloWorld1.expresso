@@ -1,0 +1,14 @@
+// HelloWorld1.expresso
+
+/*
+  As HelloWorld0 but with a Binary Function
+  @author hooNous
+  @since Oct 6th, 2025
+*/
+
+let x = 6
+print(x)
+let y = 3
+print(y)
+let f = (x, z) -> z ** x + x*z + 1
+print(f(x, y)) // Expected 748

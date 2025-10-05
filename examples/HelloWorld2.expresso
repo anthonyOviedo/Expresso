@@ -1,0 +1,32 @@
+
+// HelloWorld2.expresso
+
+/*
+  Boolean Logic
+  @author hooNous
+  @since Oct 6th, 2025
+*/
+
+let isZero = x -> x ? 0 : 1
+let TRUE  = 1
+let FALSE = 0
+
+let isTrue = x -> isZero(x) ? TRUE : FALSE
+
+let NOT = x -> x ? 0 : 1
+
+let OR =  (x, y) -> isTrue(x) ? TRUE : isTrue(y)
+
+let AND = (x, y) -> isTrue(x) ? isTrue(y) : FALSE
+
+let XOR = (x, y) -> AND(OR(x, y), NOT(AND(x, y)))
+
+print(XOR(TRUE, TRUE))   // Expected 0
+print(XOR(TRUE, FALSE))  // Expected 1
+print(XOR(FALSE, TRUE))  // Expected 1
+print(XOR(FALSE, FALSE)) // Expected 0
+
+
+
+
+

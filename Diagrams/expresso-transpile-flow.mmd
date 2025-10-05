@@ -1,0 +1,21 @@
+flowchart TD
+    A[Start: User provides Expresso source] --> B{Input path?}
+    B -->|CLI file| C[CLI reads file contents]
+    B -->|Direct API call| D[Transpiler.run receives String]
+    C --> E[Parser: ExprLexer + ExprParser.prog]
+    D --> E
+    E -->|Parse errors| Z[Failure logged / Empty output]
+    E -->|Success| F[AstBuilder builds Program statements]
+    F --> G[Visitor.generate emits Java source]
+    G --> H{Execution mode?}
+    H -->|CLI transpile| I[Write Java file to disk]
+    H -->|CLI build/run| J[Builder compiles Java -> class files]
+    H -->|Direct API| K[Return Java String]
+    J --> L["Runner executes class (optional)"]
+    I --> M[User inspects generated Java]
+    L --> N[Console output from program]
+    K --> O[Caller consumes returned Java]
+    M --> P[End]
+    N --> P
+    O --> P
+    Z --> P
