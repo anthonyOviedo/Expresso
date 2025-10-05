@@ -7,7 +7,6 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 import com.diezam04.expresso.core.transpiler.generated.ExprBaseVisitor;
 import com.diezam04.expresso.core.transpiler.generated.ExprParser;
-import com.diezam04.expresso.core.transpiler.src.ast.Ast;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.BinaryOper;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Node;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Num;

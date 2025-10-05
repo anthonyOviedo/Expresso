@@ -67,8 +67,6 @@ public class Utils {
 
     static public String loadFile(java.io.File source) {
         try {
-            String baseName = source.getName().split("\\.")[0];
-
             log("Reading file: " + source.getName());
             String content = Files.readString(source.toPath());
             if (!content.isBlank()) {

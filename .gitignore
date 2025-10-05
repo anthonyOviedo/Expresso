@@ -1,5 +1,5 @@
 /*
-
+expresso-core/target/*
 !.github/
 !/assets
 !/Diagrams 
@@ -12,3 +12,5 @@
 !pom.xml
 !README.md
 !.gitignore
+
+expresso-core/target/classes/com/diezam04/expresso/core/transpiler/generated/*
