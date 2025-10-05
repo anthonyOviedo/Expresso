@@ -14,11 +14,12 @@ permissions:
   actions: write
 jobs:
 
-  build-jar:
+ build-jar:
     runs-on: ubuntu-latest
     outputs:
       cli_jar_name: ${{ steps.pick.outputs.cli_jar_name }}
       rest_jar_name: ${{ steps.pick.outputs.rest_jar_name }}
+      dockerhub_available: ${{ steps.check-docker.outputs.available }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,6 +32,16 @@ jobs:
 
       - name: Build with Maven
         run: mvn -B -DskipTests package
+
+      - name: Check Docker Hub credentials
+        id: check-docker
+        shell: bash
+        run: |
+          if [ -n "${DOCKERHUB_USERNAME:-}" ] && [ -n "${DOCKERHUB_TOKEN:-}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Pick main cli and rest JAR
         id: pick
@@ -198,7 +209,7 @@ jobs:
           if-no-files-found: error
 
   docker-image:
-    needs: Create-cli-Release
+    needs: [build-jar, Create-cli-Release]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -221,15 +232,16 @@ jobs:
           wget -qO- http://localhost:8080/health
 
       - name: upload Docker image to Docker Hub
+        if: needs.build-jar.outputs.dockerhub_available == 'true'
         uses: docker/build-push-action@v4
         with:
           context: ./docker
           file: ./docker/dockerfile
           push: true
-          tags: antonyOviedo/expressor:latest
+          tags: antonyOviedo/expressor:${{ env.VERSION }}
         env:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
 
   Create-cli-Release:
