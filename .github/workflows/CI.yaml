@@ -36,17 +36,37 @@ jobs:
         id: pick
         shell: bash
         run: |
-          echo "cli_jar_name=$(basename $(ls expresso-cli/target/*.jar 2>/dev/null || ls expresso-cli/target/*.jar | head -n1))" >> "$GITHUB_OUTPUT"
-          echo "rest_jar_name=$(basename $(ls expresso-rest/target/*.jar 2>/dev/null || ls expresso-rest/target/*.jar | head -n1))" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          CLI_JAR=$(ls expresso-cli/target/*-shaded.jar 2>/dev/null | head -n1)
+          if [ -z "$CLI_JAR" ]; then
+            CLI_JAR=$(ls expresso-cli/target/*.jar 2>/dev/null | head -n1)
+          fi
+          if [ -z "$CLI_JAR" ]; then
+            echo "No CLI jar found under expresso-cli/target" >&2
+            ls expresso-cli/target >&2 || true
+            exit 1
+          fi
+          REST_JAR=$(ls expresso-rest/target/*-shaded.jar 2>/dev/null | head -n1)
+          if [ -z "$REST_JAR" ]; then
+            REST_JAR=$(ls expresso-rest/target/*.jar 2>/dev/null | head -n1)
+          fi
+          if [ -z "$REST_JAR" ]; then
+            echo "No REST jar found under expresso-rest/target" >&2
+            ls expresso-rest/target >&2 || true
+            exit 1
+          fi
+          echo "cli_jar_name=$(basename "$CLI_JAR")" >> "$GITHUB_OUTPUT"
+          echo "rest_jar_name=$(basename "$REST_JAR")" >> "$GITHUB_OUTPUT"
 
       - name: Test JAR
         run: |
           echo "Testing ${{ steps.pick.outputs.cli_jar_name }}"
           java -jar "expresso-cli/target/${{ steps.pick.outputs.cli_jar_name }}"
           java -jar "expresso-cli/target/${{ steps.pick.outputs.cli_jar_name }}" --help
-          java -jar "expresso-cli/target/${{ steps.pick.outputs.cli_jar_name }}" transpile --out output HelloWorld.Expresso --verbose
-          java -jar "expresso-cli/target/${{ steps.pick.outputs.cli_jar_name }}" build --out output HelloWorld.Expresso --verbose
-          java -jar "expresso-cli/target/${{ steps.pick.outputs.cli_jar_name }}" run --out output HelloWorld.Expresso --verbose
+          mkdir -p output
+          java -jar "expresso-cli/target/${{ steps.pick.outputs.cli_jar_name }}" transpile examples/HelloWorld0.expresso --out output --verbose
+          java -jar "expresso-cli/target/${{ steps.pick.outputs.cli_jar_name }}" build examples/HelloWorld0.expresso --out output --verbose
+          java -jar "expresso-cli/target/${{ steps.pick.outputs.cli_jar_name }}" run examples/HelloWorld0.expresso --out output --verbose
 
       - name: Upload Cli Jar
         uses: actions/upload-artifact@v4

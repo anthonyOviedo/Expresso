@@ -1,5 +1,8 @@
 /*
+/*.class
+*.jar
 expresso-core/target/*
+
 !.github/
 !/assets
 !/Diagrams 
@@ -14,4 +17,4 @@ expresso-core/target/*
 !README.md
 !.gitignore
 
-*.jar
+
