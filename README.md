@@ -60,15 +60,15 @@ Ambos scripts verificarán que existan las dependencias mínimas (JDK 23+, Maven
 
 ```bash
 # a) Transpilar
-expressor transpile HelloWorld.Expresso
-# -> Genera Helloworld.java (simulación inicial)
+expressor transpile examples/HelloWorld0.expresso
+# -> Genera HelloWorld0.java en el directorio indicado
 
 # b) Compilar
-expressor build HelloWorld.Expresso
-# -> Transpila y compila (Helloworld.class) usando javax.tools.JavaCompiler
+expressor build examples/HelloWorld0.expresso
+# -> Transpila y compila (HelloWorld0.class) usando javax.tools.JavaCompiler
 
 # c) Ejecutar
-expressor run HelloWorld.Expresso
+expressor run examples/HelloWorld0.expresso
 # -> Transpila, compila y ejecuta la clase resultante
 ```
 ---
