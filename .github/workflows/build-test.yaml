@@ -49,6 +49,14 @@ jobs:
           java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" build examples/HelloWorld0.expresso --out output --verbose
           java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" run examples/HelloWorld0.expresso --out output --verbose
 
+      - name: Package REST JAR
+        run: mvn -pl expresso-rest -am -DskipTests package
+
+      - name: Build Docker image
+        run: |
+          ls expresso-rest/target
+          docker build -f dockerfile -t expresso-rest:ci .
+
       - name: Discord notify success (apps deployment)
         if: success()
         uses: Ilshidur/action-discord@0.3.2
