@@ -27,18 +27,23 @@ jobs:
       
       - name: Pick main cli JAR
         id: pick
-        shell: bash
-        run: echo "jar_name=$(basename $(ls expresso-cli/target/*.jar 2>/dev/null || ls expresso-cli/target/*.jar | head -n1))" >> "$GITHUB_OUTPUT"
-
+        run: |
+          JAR=$(ls expresso-cli/target/*-shaded.jar 2>/dev/null | head -n1)
+          if [ -z "$JAR" ]; then
+            echo "No shaded jar found" >&2
+            exit 1
+          fi
+          echo "jar_name=$(basename "$JAR")" >> "$GITHUB_OUTPUT"
 
       - name: Test Cli JAR
         run: |
           echo "Testing ${{ steps.pick.outputs.jar_name }}"
           java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}"
           java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" --help
-          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" transpile --out output HelloWorld.Expresso --verbose
-          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" build --out output HelloWorld.Expresso --verbose
-          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" run --out output HelloWorld.Expresso --verbose
+          mkdir -p output
+          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" transpile examples/HelloWorld0.expresso --out output --verbose
+          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" build examples/HelloWorld0.expresso --out output --verbose
+          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" run examples/HelloWorld0.expresso --out output --verbose
 
       - name: Discord notify success (apps deployment)
         if: success()
