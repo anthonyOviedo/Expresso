@@ -11,7 +11,7 @@ flowchart TD
     H -->|CLI transpile| I[Write Java file to disk]
     H -->|CLI build/run| J[Builder compiles Java -> class files]
     H -->|Direct API| K[Return Java String]
-    J --> L[Runner executes class (optional)]
+    J --> L["Runner executes class (optional)"]
     I --> M[User inspects generated Java]
     L --> N[Console output from program]
     K --> O[Caller consumes returned Java]

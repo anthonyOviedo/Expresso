@@ -25,48 +25,35 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 
 ---
 
-## Requisitos para generar un Installador
-- **JDK 23+** (desarrollo y *target*).  
-- **Maven**  
-### Generar un JAVA Jar
+## Generar instaladores (.msi y .deb)
 
+### Requisitos previos
+- **JDK 23+** con `jpackage` disponible en el `PATH`.
+- **Maven**.
+- **Windows / MSI**: [WiX Toolset 3.11+](https://wixtoolset.org/) debe estar instalado y en el `PATH`.
+- **Linux / DEB**: instala `fakeroot`, `binutils`, `build-essential`, `rpm` (dependencias empleadas por `jpackage`).
 
-```cmd
-cd /Expresso
-mvn -B -DskipTests package
+### Script (Bash) — Linux, macOS o Git Bash/WSL
+```bash
+# Generar .deb (Linux)
+./scripts/package-installers.sh --deb
+
+# Generar .msi (Windows desde Git Bash/WSL)
+./scripts/package-installers.sh --msi
 ```
 
-### Generar Cli installer en cmd usando el Jar creado.
-```cmd
-set "OUT_DIR=%cd%\out"
-set "OBJ_DIR=%cd%\obj"
-set "DIST_DIR=%cd%\dist"
-set "APP_NAME=expresso"
-set "JAR_NAME=.jar"
-set "MAIN_CLASS=com.diezam04.expresso.adapters.cli.Cli"
-mkdir "%OUT_DIR%"
-mkdir "%OBJ_DIR%"
-mkdir "%DIST_DIR%"
-
-jpackage ^
-  --type app-image ^
-  --name "%APP_NAME%" ^
-  --input "target" ^
-  --main-jar "%JAR_NAME%" ^
-  --main-class "%MAIN_CLASS%" ^
-  --win-console ^
-  --dest "%OUT_DIR%"
-
-set "SRC=%OUT_DIR%\%APP_NAME%"
-
-"%WIX%\bin\heat.exe" dir "%SRC%" -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out harvest.wxs
-"%WIX%\bin\candle.exe" -arch x64 -dSourceDir="%SRC%" -out "%OBJ_DIR%\" packaging\windows\product.wxs harvest.wxs
-"%WIX%\bin\light.exe" -ext WixUtilExtension -sval -o "%DIST_DIR%\%APP_NAME%-1.0.msi" "%OBJ_DIR%\product.wixobj" "%OBJ_DIR%\harvest.wixobj"
+### Script (PowerShell) — Windows nativo
+```powershell
+pwsh -File .\scripts\package-installers.ps1 -Msi
 ```
 
----
-## Ejecutar el instalador generado 
-Hacer doble click en el expresso.msi para instalar de Expresso
+Ambos scripts verificarán que existan las dependencias mínimas (JDK 23+, Maven y, según la plataforma, WiX o fakeroot/binutils/build-essential/rpm). En Windows se utilizará `winget` (requiere consola con privilegios elevados); en Linux se usarán paquetes `apt` si están disponibles. A continuación compilan (`mvn -pl expresso-cli -am -DskipTests package`) y ejecutan `jpackage`. Los instaladores quedan en `out/installers/`.
+
+> Para generar el `.deb` en Windows utiliza WSL o cualquier shell Bash compatible.
+
+### Ejecutar el instalador generado
+- **Windows**: doble clic en el `.msi` generado.
+- **Linux (Debian/Ubuntu)**: `sudo apt install ./out/installers/expresso_<version>_amd64.deb`
 
 ## Uso basico del CLI `expressor`
 > El CLI es una aplicación **Java** (no *shell script*). Los siguientes comandos son parte del **Sprint Inicial** como *mocks* funcionales.

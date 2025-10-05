@@ -8,6 +8,7 @@ expresso-core/target/*
 !/expresso-rest
 !/expresso-cli
 !/expresso-eshell
+!/scripts
 !dockerfile
 !pom.xml
 !README.md
