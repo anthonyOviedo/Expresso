@@ -28,9 +28,9 @@ jobs:
       - name: Pick main cli JAR
         id: pick
         run: |
-          JAR=$(ls expresso-cli/target/*-shaded.jar 2>/dev/null | head -n1)
+          JAR=$(find expresso-cli/target -maxdepth 1 -type f -name '*-shaded.jar' | sort | head -n1)
           if [ -z "$JAR" ]; then
-            JAR=$(ls expresso-cli/target/*.jar 2>/dev/null | head -n1)
+            JAR=$(find expresso-cli/target -maxdepth 1 -type f -name '*.jar' | sort | head -n1)
           fi
           if [ -z "$JAR" ]; then
             echo "No CLI jar found under expresso-cli/target" >&2
