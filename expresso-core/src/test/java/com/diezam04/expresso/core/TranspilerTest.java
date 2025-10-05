@@ -2,8 +2,6 @@ package com.diezam04.expresso.core;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.regex.Pattern;
-
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.junit.jupiter.api.Test;
 
@@ -19,18 +17,68 @@ class TranspilerTest {
         assertNotNull(result, "Transpiler.run should not return null for valid input");
         assertFalse(result.isBlank(), "Transpiler.run should return non-blank output for valid input");
 
-        // Regex tolerante a espacios y saltos de línea (DOTALL)
-        String regex =
-            "^package\\s+com\\.diezam04\\.expresso\\.generated;\\R+" +          // package
-            "public\\s+class\\s+Main\\s*\\{\\R+" +                              // class header
-            "\\s*public\\s+static\\s+void\\s+main\\(String\\[\\]\\s+args\\)\\s*\\{\\R+" + // main
-            "\\s*//\\s*---\\s*Transpiled\\s+Expresso\\s+code\\s*---\\R+" +     // comment
-            "\\s*1\\s*\\+\\s*2\\R+" +                                          // the source
-            "\\s*\\}\\R+" +                                                    // close main
-            "\\}\\R*\\z";                                                      // close class (EOF)
+        assertTrue(result.contains("public class Main {"),
+            () -> "Expected generated class declaration.\n--- Got ---\n" + result);
+        assertTrue(result.contains("public static void print(Object arg)"),
+            () -> "Expected print helper method.\n--- Got ---\n" + result);
+        assertTrue(result.contains("public static void main(String... args) {"),
+            () -> "Expected main method signature.\n--- Got ---\n" + result);
+        assertTrue(result.contains("(1 + 2);"),
+            () -> "Expected the original expression to appear in the main body.\n--- Got ---\n" + result);
+    }
 
-        assertTrue(Pattern.compile(regex, Pattern.DOTALL).matcher(result).find(),
-            () -> "Output did not match expected Java wrapper.\n--- Got ---\n" + result);
+    @Test
+    void runTranspilesLetStatementToIntAndPrintCall() {
+        String source = String.join("\n",
+            "let x = 3",
+            "print(x) // hello",
+            "");
+
+        String result = Transpiler.run(source);
+
+        assertTrue(result.contains("int x = 3;"),
+            () -> "Expected integer assignment.\n--- Got ---\n" + result);
+        assertTrue(result.contains("print(x); // hello"),
+            () -> "Expected inline comment to be preserved.\n--- Got ---\n" + result);
+    }
+
+    @Test
+    void runTranspilesLambdaDefinitionAndInvocation() {
+        String source = String.join("\n",
+            "let x = 6",
+            "let y = 3",
+            "let f = (x, z) -> z ** x + x*z + 1",
+            "print(f(x, y))",
+            "");
+
+        String result = Transpiler.run(source);
+
+        assertTrue(result.contains("BiFunction<Integer, Integer, Integer> f = (x, z) ->"),
+            () -> "Expected BiFunction assignment.\n--- Got ---\n" + result);
+        assertTrue(result.contains("print(f.apply(x, y));"),
+            () -> "Expected BiFunction invocation via apply.\n--- Got ---\n" + result);
+        assertTrue(result.contains("(int) Math.pow(z, x)"),
+            () -> "Expected exponentiation to map to Math.pow.\n--- Got ---\n" + result);
+    }
+
+    @Test
+    void runPreservesStandaloneAndTrailingComments() {
+        String source = String.join("\n",
+            "// heading",
+            "let x = 1",
+            "print(x) // trailing",
+            "/* block */",
+            "print(x + 1)",
+            "");
+
+        String result = Transpiler.run(source);
+
+        assertTrue(result.contains("// heading"),
+            () -> "Expected leading comment.\n--- Got ---\n" + result);
+        assertTrue(result.contains("print(x); // trailing"),
+            () -> "Expected trailing comment.\n--- Got ---\n" + result);
+        assertTrue(result.contains("/* block */"),
+            () -> "Expected block comment line.\n--- Got ---\n" + result);
     }
 
     @Test
