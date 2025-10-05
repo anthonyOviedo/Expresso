@@ -7,7 +7,7 @@ on:
 env:
   APP_NAME: expressor
   MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
-  VERSION: 2.1
+  VERSION: 3.1
 
 permissions:
   contents: write
@@ -172,31 +172,23 @@ jobs:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
           path: target
 
-      - name: jpackage -> app-image (CLI-only)
+      - name: jpackage -> MSI
         shell: powershell
         run: |
-          New-Item -ItemType Directory -Force -Path out | Out-Null
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
           jpackage `
-            --type app-image `
+            --type msi `
             --name "$env:APP_NAME" `
             --input target `
             --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" `
             --main-class "$env:MAIN_CLASS" `
+            --dest dist `
+            --app-version "$env:VERSION" `
+            --vendor "Expresso Team" `
             --win-console `
-            --dest out
-
-      - name: WiX harvest
-        shell: powershell
-        run: |
-              $src = Join-Path $PWD "out\$env:APP_NAME"
-              & "$env:WIX\bin\heat.exe" dir $src -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out harvest.wxs
-
-      - name: Build MSI (WiX)
-        shell: powershell
-        run: |
-          & "$env:WIX\bin\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" -out obj\ packaging/windows/product.wxs harvest.wxs
-          New-Item -ItemType Directory -Force -Path dist | Out-Null
-          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\${{env.APP_NAME}}-${{env.VERSION}}.msi" obj\product.wixobj obj\harvest.wixobj
+            --win-menu `
+            --win-menu-group "Expresso" `
+            --win-dir-chooser
 
       - name: Upload .msi
         uses: actions/upload-artifact@v4
