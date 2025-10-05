@@ -30,7 +30,11 @@ jobs:
         run: |
           JAR=$(ls expresso-cli/target/*-shaded.jar 2>/dev/null | head -n1)
           if [ -z "$JAR" ]; then
-            echo "No shaded jar found" >&2
+            JAR=$(ls expresso-cli/target/*.jar 2>/dev/null | head -n1)
+          fi
+          if [ -z "$JAR" ]; then
+            echo "No CLI jar found under expresso-cli/target" >&2
+            ls expresso-cli/target >&2 || true
             exit 1
           fi
           echo "jar_name=$(basename "$JAR")" >> "$GITHUB_OUTPUT"
