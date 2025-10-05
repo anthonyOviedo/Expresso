@@ -37,18 +37,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          CLI_JAR=$(ls expresso-cli/target/*-shaded.jar 2>/dev/null | head -n1)
+          CLI_JAR=$(find expresso-cli/target -maxdepth 1 -type f -name '*-shaded.jar' | sort | head -n1)
           if [ -z "$CLI_JAR" ]; then
-            CLI_JAR=$(ls expresso-cli/target/*.jar 2>/dev/null | head -n1)
+            CLI_JAR=$(find expresso-cli/target -maxdepth 1 -type f -name '*.jar' | sort | head -n1)
           fi
           if [ -z "$CLI_JAR" ]; then
             echo "No CLI jar found under expresso-cli/target" >&2
             ls expresso-cli/target >&2 || true
             exit 1
           fi
-          REST_JAR=$(ls expresso-rest/target/*-shaded.jar 2>/dev/null | head -n1)
+          REST_JAR=$(find expresso-rest/target -maxdepth 1 -type f -name '*-shaded.jar' | sort | head -n1)
           if [ -z "$REST_JAR" ]; then
-            REST_JAR=$(ls expresso-rest/target/*.jar 2>/dev/null | head -n1)
+            REST_JAR=$(find expresso-rest/target -maxdepth 1 -type f -name '*.jar' | sort | head -n1)
           fi
           if [ -z "$REST_JAR" ]; then
             echo "No REST jar found under expresso-rest/target" >&2
