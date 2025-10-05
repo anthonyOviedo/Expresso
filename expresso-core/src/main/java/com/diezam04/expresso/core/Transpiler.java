@@ -54,8 +54,12 @@ public final class Transpiler {
             System.err.println("Failed to read source file: " + ex.getMessage());
         }
     }
-
+    
     public static String run(String expressoSource) {
+        return run(expressoSource, "Main");        
+    }
+
+    public static String run(String expressoSource,String className ) {
         if (expressoSource == null || expressoSource.isBlank()) {
             Utils.log("Transpiler received empty source", "ERROR");
             return "";
@@ -65,12 +69,25 @@ public final class Transpiler {
             ParseTree tree = parseToAst(expressoSource);
             Program program = new AstBuilder().build(tree);
             Utils.log(program.toString(), "INFO");
-            return expressoSource;
+
+            // === Wrap transpiled content in Filename class ===
+            StringBuilder javaOutput = new StringBuilder();
+
+            javaOutput.append("package com.diezam04.expresso.generated;\n\n");
+            javaOutput.append("public class ").append(className).append(" {\n");
+            javaOutput.append("    public static void main(String[] args) {\n");
+            javaOutput.append("        // --- Transpiled Expresso code ---\n");
+            javaOutput.append("        ").append(expressoSource.replace("\n", "\n        ")).append("\n");
+            javaOutput.append("    }\n");
+            javaOutput.append("}\n");
+
+            return javaOutput.toString();
         } catch (RuntimeException ex) {
             Utils.log("Transpilation failed: " + ex.getMessage(), "ERROR");
             return "";
         }
     }
+
 
     public static ParseTree parseToAst(String source) {
         return buildParser(source).prog();

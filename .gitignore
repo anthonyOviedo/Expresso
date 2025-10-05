@@ -13,4 +13,4 @@ expresso-core/target/*
 !README.md
 !.gitignore
 
-expresso-core/target/classes/com/diezam04/expresso/core/transpiler/generated/*
+*.jar
