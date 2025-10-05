@@ -42,9 +42,18 @@ Proyecto del curso **EIF400-II-2025 · Paradigmas de Programación (UNA)**
 ./scripts/package-installers.sh --msi
 ```
 
-### Script (PowerShell) — Windows nativo
+### Script (CMD / PowerShell) — Windows nativo
+```cmd
+:: Ejecuta el wrapper .cmd (detecta automáticamente powershell/pwsh)
+scripts\package-installers.cmd --msi
+```
+
+Si prefieres invocarlo manualmente desde PowerShell:
+
 ```powershell
 pwsh -File .\scripts\package-installers.ps1 -Msi
+# o, con Windows PowerShell clásico:
+powershell -ExecutionPolicy Bypass -File .\scripts\package-installers.ps1 -Msi
 ```
 
 Ambos scripts verificarán que existan las dependencias mínimas (JDK 23+, Maven y, según la plataforma, WiX o fakeroot/binutils/build-essential/rpm). En Windows se utilizará `winget` (requiere consola con privilegios elevados); en Linux se usarán paquetes `apt` si están disponibles. A continuación compilan (`mvn -pl expresso-cli -am -DskipTests package`) y ejecutan `jpackage`. Los instaladores quedan en `out/installers/`.
