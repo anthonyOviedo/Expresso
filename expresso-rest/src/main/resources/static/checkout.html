@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Checkout · Drunkitties Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="checkout">
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="logo" href="index.html">🐾 Drunkitties</a>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="siteNav">
+        <span class="sr-only">Abrir menú</span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <nav class="site-nav" id="siteNav">
+        <a href="index.html" data-nav="home">Inicio</a>
+        <a href="productos.html" data-nav="productos">Productos</a>
+        <a href="personalizar.html" data-nav="personalizar">Personalizar</a>
+        <a href="carrito.html" data-nav="carrito">Carrito</a>
+        <a href="checkout.html" data-nav="checkout">Checkout</a>
+        <a href="sobre-nosotros.html" data-nav="sobre-nosotros">Sobre nosotros</a>
+        <a href="contacto.html" data-nav="contacto">Contacto</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="container checkout">
+      <h1>Finaliza tu compra</h1>
+      <p class="intro">Completa tu información y revisa tu pedido antes de confirmar el pago.</p>
+
+      <form class="checkout-form">
+        <div class="form-column">
+          <h2>Datos de contacto</h2>
+          <label class="input-group">
+            <span>Nombre completo</span>
+            <input type="text" name="nombre" placeholder="Ingresa tu nombre" required>
+          </label>
+          <label class="input-group">
+            <span>Correo electrónico</span>
+            <input type="email" name="correo" placeholder="hola@drunkitties.studio" required>
+          </label>
+          <label class="input-group">
+            <span>Dirección</span>
+            <input type="text" name="direccion" placeholder="Calle, número y ciudad" required>
+          </label>
+          <label class="input-group">
+            <span>Código postal</span>
+            <input type="text" name="postal" placeholder="00000" required>
+          </label>
+        </div>
+
+        <div class="form-column">
+          <h2>Pago</h2>
+          <label class="input-group">
+            <span>Número de tarjeta</span>
+            <input type="text" name="tarjeta" placeholder="0000 0000 0000 0000" required>
+          </label>
+          <div class="form-row">
+            <label class="input-group">
+              <span>Expiración</span>
+              <input type="text" name="expiracion" placeholder="MM/AA" required>
+            </label>
+            <label class="input-group">
+              <span>CVC</span>
+              <input type="text" name="cvc" placeholder="123" required>
+            </label>
+          </div>
+          <label class="input-group checkbox">
+            <input type="checkbox" required>
+            <span>Acepto los <a href="terminos.html">términos y condiciones</a>.</span>
+          </label>
+          <button class="btn" type="submit">Confirmar y pagar</button>
+        </div>
+      </form>
+
+      <aside class="order-summary">
+        <h2>Resumen del pedido</h2>
+        <ul>
+          <li>
+            <span>Mousepad personalizado</span>
+            <span>€8,000</span>
+          </li>
+          <li>
+            <span>Taza personalizada</span>
+            <span>€6,600</span>
+          </li>
+          <li>
+            <span>Envío</span>
+            <span>€1,200</span>
+          </li>
+        </ul>
+        <div class="order-total">
+          <span>Total</span>
+          <span>€15,800</span>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="logo" href="index.html">🐾 Drunkitties</a>
+        <p>Diseñamos recuerdos inolvidables para quienes viven llenos de patitas y ronroneos.</p>
+      </div>
+      <div class="footer-links">
+        <a href="privacidad.html">Política de privacidad</a>
+        <a href="terminos.html">Términos y condiciones</a>
+        <a href="contacto.html">Atención al cliente</a>
+      </div>
+      <p class="footer-copy">© 2025 Drunkitties Studio. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="index.js"></script>
+</body>
+</html>
