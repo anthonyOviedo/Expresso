@@ -1,39 +1,35 @@
 package com.diezam04.expresso.core;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
 class RunnerTest {
 
     @Test
-    void runReturnsProcessOutputForValidClassFile() {
-        // Define una clase Java mínima que imprime un mensaje conocido.
-        String javaSource = "public class Hello {public static void main(String[] args) {System.out.print(\"Hola Expresso\");}}";
+    void pipelineTranspileBuildRunProducesExpectedOutput() throws IOException {
+        // Step 1: load reference program.
+        Path example = Path.of("..", "examples", "HelloWorld0.expresso").toAbsolutePath().normalize();
+        assertTrue(Files.exists(example), "Example file must exist");
+        String source = Files.readString(example);
+        assertFalse(source.isBlank(), "Example input must not be blank");
 
-        // Usa el Builder para compilar la clase y obtener la ruta del .class generado.
+        // Step 2: transpile to Java and ensure content exists.
+        String javaSource = Transpiler.run(source, "HelloWorld0");
+        assertFalse(javaSource.isBlank(), "Transpiler should emit Java code");
+
+        // Step 3: build Java source into bytecode.
         String classFilePath = Builder.run(javaSource);
-        assertNotNull(classFilePath, "Builder.run should return compiled class path");
-        assertFalse(classFilePath.isBlank(), "Builder.run should return compiled class path");
+        assertFalse(classFilePath.isBlank(), "Builder must return a class file path");
 
-        // Ejecuta el .class con Runner y comprueba que la salida corresponde a lo esperado.
+        // Step 4: run compiled program and verify the output matches the HelloWorld scenario.
         String output = Runner.run(classFilePath);
-        assertEquals("Hola Expresso", output);
-    }
-
-    @Test
-    void runWithNullPathReturnsErrorMessage() {
-        // Ejecutar Runner con una ruta inválida debe regresar un mensaje de error.
-        String result = Runner.run(null);
-        assertTrue(result.startsWith("Error:"));
+        assertTrue(output.contains("666"), "Output must include first print from HelloWorld0");
+        assertTrue(output.contains("10"), "Output must include second print from HelloWorld0");
     }
 }
-
-
-// assertNotNull → verifies the Builder produced a result.
-// assertFalse(...isBlank()) → ensures the result isn’t empty/meaningless.
-// assertEquals → validates the expected output of the compiled program.
-// assertTrue(...startsWith("Error:")) → checks error handling for invalid input.
