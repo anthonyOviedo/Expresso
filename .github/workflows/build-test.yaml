@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       jar_name: ${{ steps.pick.outputs.jar_name }}
+      rest_jar_name: ${{ steps.pick-rest.outputs.rest_jar_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -22,12 +23,13 @@ jobs:
           java-version: '24'
           cache: maven
 
-      - name: Build with Maven
-        run: mvn clean install -DskipTests
-      
+      - name: Build & run unit tests
+        run: mvn -B clean verify
+
       - name: Pick main cli JAR
         id: pick
         run: |
+          set -euo pipefail
           JAR=$(find expresso-cli/target -maxdepth 1 -type f -name '*-shaded.jar' | sort | head -n1)
           if [ -z "$JAR" ]; then
             JAR=$(find expresso-cli/target -maxdepth 1 -type f -name '*.jar' | sort | head -n1)
@@ -39,18 +41,55 @@ jobs:
           fi
           echo "jar_name=$(basename "$JAR")" >> "$GITHUB_OUTPUT"
 
+      - name: Pick REST JAR
+        id: pick-rest
+        run: |
+          set -euo pipefail
+          REST_JAR=$(find expresso-rest/target -maxdepth 1 -type f -name '*-shaded.jar' | sort | head -n1)
+          if [ -z "$REST_JAR" ]; then
+            REST_JAR=$(find expresso-rest/target -maxdepth 1 -type f -name '*.jar' | sort | head -n1)
+          fi
+          if [ -z "$REST_JAR" ]; then
+            echo "No REST jar found under expresso-rest/target" >&2
+            ls expresso-rest/target >&2 || true
+            exit 1
+          fi
+          echo "rest_jar_name=$(basename "$REST_JAR")" >> "$GITHUB_OUTPUT"
+
       - name: Test Cli JAR
         run: |
-          echo "Testing ${{ steps.pick.outputs.jar_name }}"
-          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}"
-          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" --help
+          set -euo pipefail
+          JAR="expresso-cli/target/${{ steps.pick.outputs.jar_name }}"
+          echo "Testing $JAR"
+          java -jar "$JAR" --help
           mkdir -p output
-          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" transpile examples/HelloWorld0.expresso --out output --verbose
-          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" build examples/HelloWorld0.expresso --out output --verbose
-          java -jar "expresso-cli/target/${{ steps.pick.outputs.jar_name }}" run examples/HelloWorld0.expresso --out output --verbose
+          java -jar "$JAR" transpile examples/HelloWorld0.expresso --out output --verbose
+          java -jar "$JAR" build examples/HelloWorld0.expresso --out output --verbose
+          java -jar "$JAR" run examples/HelloWorld0.expresso --out output --verbose
 
-      - name: Package REST JAR
-        run: mvn -pl expresso-rest -am -DskipTests package
+      - name: Smoke test REST JAR
+        run: |
+          set -euo pipefail
+          REST_JAR="expresso-rest/target/${{ steps.pick-rest.outputs.rest_jar_name }}"
+          echo "Starting REST service from $REST_JAR"
+          export SERVER_PORT=8081
+          java -jar "$REST_JAR" >/tmp/rest.log 2>&1 &
+          PID=$!
+          cleanup() {
+            kill $PID >/dev/null 2>&1 || true
+            wait $PID 2>/dev/null || true
+            tail -n 100 /tmp/rest.log || true
+          }
+          trap cleanup EXIT
+          for _ in $(seq 1 30); do
+            if curl -sSf "http://127.0.0.1:${SERVER_PORT}/api/v1/health" | grep -q 'ok'; then
+              echo "REST healthcheck passed"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "REST API failed healthcheck" >&2
+          exit 1
 
       - name: Build Docker image
         run: |
