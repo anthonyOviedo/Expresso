@@ -25,6 +25,34 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
+      - name: Log release context
+        run: |
+          echo "Workflow: $GITHUB_WORKFLOW"
+          echo "Run ID: $GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT)"
+          echo "Actor: $GITHUB_ACTOR"
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Release version: $VERSION"
+          echo "Upstream workflow run ID: ${{ github.event.workflow_run.id }}"
+          echo "Upstream workflow status: ${{ github.event.workflow_run.conclusion }}"
+          echo "Upstream branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Target commit: ${{ github.event.workflow_run.head_sha }}"
+          echo "Current run URL: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          echo "Upstream run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}"
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ## CD run metadata
+          - Workflow: $GITHUB_WORKFLOW
+          - Run ID: $GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT)
+          - Repository: $GITHUB_REPOSITORY
+          - Actor: $GITHUB_ACTOR
+          - Release version: $VERSION
+          - Upstream workflow run ID: ${{ github.event.workflow_run.id }}
+          - Upstream workflow status: ${{ github.event.workflow_run.conclusion }}
+          - Upstream branch: ${{ github.event.workflow_run.head_branch }}
+          - Target commit: ${{ github.event.workflow_run.head_sha }}
+          - Current run URL: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          - Upstream run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}
+          EOF
+
       - name: Download CLI jar
         uses: actions/download-artifact@v4
         with:
