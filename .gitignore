@@ -1,20 +1,44 @@
+# Ignore everything by default
 /*
-/*.class
-*.jar
-expresso-core/target/*
 
-!.github/
-!/assets
-!/Diagrams 
-!/examples
-!/expresso-core
-!/expresso-rest
-!/expresso-cli
-!/expresso-eshell
-!/scripts
-!dockerfile
-!pom.xml
-!README.md
+# Always keep these tracked root items
 !.gitignore
+!/.github/
+!/.github/**
+!/assets/
+!/assets/**
+!/Diagrams/
+!/Diagrams/**
+!/examples/
+!/examples/**
+!/expresso-core/
+!/expresso-core/src/lib/**
+!/expresso-rest/
+!/expresso-rest/**
+!/expresso-cli/
+!/expresso-cli/src/**
+!/expresso-eshell/
+!/expresso-eshell/**
+!/scripts/
+!/scripts/**
+!/dockerfile
+!/pom.xml
+!/README.md
 
-
+# Ignore build & editor artifacts within the kept folders
+**/target/
+dist/
+out/
+*.class
+*.jar
+*.msi
+*.deb
+*.exe
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
+.idea/
+.vscode/
+*.iml
