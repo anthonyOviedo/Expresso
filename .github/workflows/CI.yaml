@@ -177,7 +177,8 @@ jobs:
           exit 1
 
   cli-installer-deb:
-    needs: build-jar
+    needs:
+      - test-cli-jar
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -262,7 +263,8 @@ jobs:
           sudo dpkg -r "${APP_NAME}"
 
   cli-installer-msi:
-    needs: build-jar
+    needs:
+      - test-cli-jar
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -329,7 +331,8 @@ jobs:
           Start-Process msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
 
   cli-installer-exe:
-    needs: build-jar
+    needs:
+      - test-cli-jar
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
