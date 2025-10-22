@@ -35,7 +35,6 @@ El pipeline de CI usa [`jpackage`](https://docs.oracle.com/en/java/javase/23/jpa
 - **Windows 10/11** con PowerShell.
 - [Temurin JDK 24](https://adoptium.net/) (incluye `jpackage`).
 - [Apache Maven 3.9+](https://maven.apache.org/).
-- [WiX Toolset 3.11+](https://wixtoolset.org/) (necesario para `jpackage --type exe`).
 
 Verifica que `java`, `mvn` y `jpackage` estén en el `PATH` antes de continuar.
 
