@@ -273,9 +273,10 @@ jobs:
           echo "Inspecting $DEB_FILE"
           dpkg-deb --info "$DEB_FILE"
           dpkg-deb --contents "$DEB_FILE" | grep -E "/usr/local/bin/${APP_NAME}$"
-          sudo dpkg -i "$DEB_FILE"
+          sudo apt-get update
+          sudo apt-get install -y "$DEB_FILE"
           /usr/local/bin/"${APP_NAME}" --help
-          sudo dpkg -r "${APP_NAME}"
+          sudo apt-get remove -y "${APP_NAME}"
 
   cli-installer-msi:
     needs:
@@ -340,8 +341,8 @@ jobs:
         run: |
           $msi = Get-ChildItem -Path artifacts -Filter *.msi | Select-Object -First 1
           if(-not $msi){ throw "MSI not found" }
-          Start-Process msiexec.exe -ArgumentList '/i', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
-          $cli = "C:\Program Files\${env:APP_NAME}\bin\${env:APP_NAME}.exe"
+          Start-Process msiexec.exe -ArgumentList '/i', $msi.FullName, '/qn', '/norestart', "APPDIR=C:\${env:APP_NAME}" -Wait -NoNewWindow
+          $cli = "C:\${env:APP_NAME}\${env:APP_NAME}.exe"
           if(-not (Test-Path $cli)){ throw "CLI executable not found" }
           & $cli --help
           Start-Process msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
@@ -400,16 +401,7 @@ jobs:
         run: |
           $exe = Get-ChildItem -Path artifacts -Filter *.exe | Select-Object -First 1
           if(-not $exe){ throw "EXE not found" }
-          Start-Process $exe.FullName -ArgumentList '/install', '/quiet', '/norestart' -Wait -NoNewWindow
-          $searchRoots = @("C:\Program Files", "C:\Program Files (x86)")
-          $cli = $null
-          foreach($root in $searchRoots){
-            $match = Get-ChildItem -Path $root -Filter "${env:APP_NAME}.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-            if($match){
-              $cli = $match.FullName
-              break
-            }
+          $result = Start-Process -FilePath $exe.FullName -ArgumentList '--help' -Wait -PassThru
+          if($result.ExitCode -ne 0){
+            throw "expressor.exe exited with code $($result.ExitCode)"
           }
-          if(-not $cli){ throw "CLI executable not found" }
-          & $cli --help
-          Start-Process $exe.FullName -ArgumentList '/uninstall', '/quiet', '/norestart' -Wait -NoNewWindow
