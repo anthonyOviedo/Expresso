@@ -192,6 +192,7 @@ jobs:
 
   cli-installer-deb:
     needs:
+      - build-jar
       - test-cli-jar
     runs-on: ubuntu-latest
     steps:
@@ -278,6 +279,7 @@ jobs:
 
   cli-installer-msi:
     needs:
+      - build-jar
       - test-cli-jar
     runs-on: windows-latest
     steps:
@@ -346,6 +348,7 @@ jobs:
 
   cli-installer-exe:
     needs:
+      - build-jar
       - test-cli-jar
     runs-on: windows-latest
     steps:
@@ -356,10 +359,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '24'
-
-      - name: Install WiX
-        shell: powershell
-        run: choco install wixtoolset -y
 
       - name: Download CLI jar
         uses: actions/download-artifact@v4
@@ -378,12 +377,7 @@ jobs:
             --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" `
             --main-class "$env:MAIN_CLASS" `
             --dest dist `
-            --app-version "$env:VERSION" `
-            --vendor "Expresso Team" `
-            --win-console `
-            --win-menu `
-            --win-menu-group "Expresso" `
-            --win-dir-chooser
+            --app-version "$env:VERSION"
 
       - name: Upload .exe
         uses: actions/upload-artifact@v4
@@ -407,7 +401,15 @@ jobs:
           $exe = Get-ChildItem -Path artifacts -Filter *.exe | Select-Object -First 1
           if(-not $exe){ throw "EXE not found" }
           Start-Process $exe.FullName -ArgumentList '/install', '/quiet', '/norestart' -Wait -NoNewWindow
-          $cli = "C:\Program Files\${env:APP_NAME}\bin\${env:APP_NAME}.exe"
-          if(-not (Test-Path $cli)){ throw "CLI executable not found" }
+          $searchRoots = @("C:\Program Files", "C:\Program Files (x86)")
+          $cli = $null
+          foreach($root in $searchRoots){
+            $match = Get-ChildItem -Path $root -Filter "${env:APP_NAME}.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if($match){
+              $cli = $match.FullName
+              break
+            }
+          }
+          if(-not $cli){ throw "CLI executable not found" }
           & $cli --help
           Start-Process $exe.FullName -ArgumentList '/uninstall', '/quiet', '/norestart' -Wait -NoNewWindow
