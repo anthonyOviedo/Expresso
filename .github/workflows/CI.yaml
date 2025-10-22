@@ -11,7 +11,7 @@ env:
 
 jobs:
   build-jar:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     outputs:
       cli_jar_name: ${{ steps.pick.outputs.cli_jar_name }}
       rest_jar_name: ${{ steps.pick.outputs.rest_jar_name }}
@@ -74,7 +74,7 @@ jobs:
 
   test-cli-jar:
     needs: build-jar
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -104,7 +104,7 @@ jobs:
 
   test-rest-jar:
     needs: build-jar
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -147,7 +147,7 @@ jobs:
 
   test-docker-image:
     needs: build-jar
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -193,7 +193,7 @@ jobs:
   cli-installer-deb:
     needs:
       - test-cli-jar
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -258,7 +258,7 @@ jobs:
 
   test-deb:
     needs: cli-installer-deb
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
