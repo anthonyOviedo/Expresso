@@ -146,7 +146,8 @@ jobs:
           exit 1
 
   test-docker-image:
-    needs: build-jar
+    needs:
+      - test-rest-jar
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -193,6 +194,8 @@ jobs:
   cli-installer-deb:
     needs:
       - test-cli-jar
+      - test-rest-jar
+      - test-docker-image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -279,6 +282,8 @@ jobs:
   cli-installer-msi:
     needs:
       - test-cli-jar
+      - test-rest-jar
+      - test-docker-image
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -347,6 +352,8 @@ jobs:
   cli-installer-exe:
     needs:
       - test-cli-jar
+      - test-rest-jar
+      - test-docker-image
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
