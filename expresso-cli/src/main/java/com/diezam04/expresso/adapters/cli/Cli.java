@@ -18,7 +18,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 @Command(name = "expressor", mixinStandardHelpOptions = true,
-version = "expressor 1.1",
+version = "expressor 3.2",
 description = "Custom CLI tool")
 public class Cli implements Runnable {
 

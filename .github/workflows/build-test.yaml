@@ -4,7 +4,7 @@ on:
   pull_request: 
 
 env:
-  APP_NAME: expressor
+  APP_NAME: expresso
   MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
 
 jobs:
