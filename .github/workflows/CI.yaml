@@ -17,7 +17,9 @@ jobs:
     uses: ./.github/workflows/ci-tests.yaml
 
   webapp:
-    needs: build
+    needs:
+      - build
+      - tests
     uses: ./.github/workflows/ci-webapp.yaml
 
   package-deb:
