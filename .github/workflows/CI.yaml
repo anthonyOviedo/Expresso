@@ -2,7 +2,7 @@ name: CI and CDelivery for the CLI app
 
 on:
   push:
-    branches: [main]
+    branches: [dev]
 
 env:
   APP_NAME: expressor
@@ -314,9 +314,15 @@ jobs:
           if(-not $msi){ throw "MSI not found" }
           Write-Host "Installing $($msi.FullName)"
           Start-Process -FilePath msiexec.exe -ArgumentList '/i', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
-          $cliPath = "C:\Program Files\${env:APP_NAME}\bin\${env:APP_NAME}.exe"
-          if(-not (Test-Path $cliPath)){
-            throw "CLI executable not found at $cliPath"
+          $installDir = "C:\Program Files\${env:APP_NAME}"
+          $candidatePaths = @(
+            Join-Path $installDir "${env:APP_NAME}.exe",
+            Join-Path $installDir "bin\${env:APP_NAME}.exe"
+          )
+          $cliPath = $candidatePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if(-not $cliPath){
+            $checked = $candidatePaths -join ', '
+            throw "CLI executable not found. Checked: $checked"
           }
           & $cliPath --help
           Start-Process -FilePath msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
