@@ -254,6 +254,11 @@ jobs:
             --resource-dir packaging \
             --dest dist \
             --verbose
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
+          path: dist/*.deb
 
   test-deb:
     needs: cli-installer-deb
