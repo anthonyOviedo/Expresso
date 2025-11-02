@@ -21,19 +21,25 @@ jobs:
     uses: ./.github/workflows/ci-webapp.yaml
 
   package-deb:
-    needs: build
+    needs:
+      - build
+      - tests
     uses: ./.github/workflows/ci-package-deb.yaml
     with:
       cli_jar_name: ${{ needs.build.outputs.cli_jar_name }}
 
   package-msi:
-    needs: build
+    needs:
+      - build
+      - tests
     uses: ./.github/workflows/ci-package-msi.yaml
     with:
       cli_jar_name: ${{ needs.build.outputs.cli_jar_name }}
 
   package-exe:
-    needs: build
+    needs:
+      - build
+      - tests
     uses: ./.github/workflows/ci-package-exe.yaml
     with:
       cli_jar_name: ${{ needs.build.outputs.cli_jar_name }}
