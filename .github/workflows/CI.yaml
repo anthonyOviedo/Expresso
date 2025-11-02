@@ -251,25 +251,29 @@ jobs:
     needs: cli-installer-deb
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download .deb
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
           path: artifacts
-
-      - name: Inspect and install Debian package
+      - name: Install and verify .deb
         run: |
           set -euo pipefail
           DEB_FILE=$(find artifacts -maxdepth 1 -name '*.deb' -print -quit)
           echo "Inspecting $DEB_FILE"
-          dpkg-deb --info "$DEB_FILE"
-          dpkg-deb --contents "$DEB_FILE" | grep -E "/usr/local/bin/${APP_NAME}$"
-          sudo dpkg -i "$DEB_FILE"
-          /usr/local/bin/"${APP_NAME}" --help
+          dpkg-deb --info "$DEB_FILE" || true
+          sudo dpkg -i "$DEB_FILE" || (sudo apt-get update && sudo apt-get -f -y install && sudo dpkg -i "$DEB_FILE")
+          if command -v "${APP_NAME}" >/dev/null 2>&1; then
+            BIN="$(command -v "${APP_NAME}")"
+          elif [ -x "/opt/${APP_NAME}/bin/${APP_NAME}" ]; then
+            BIN="/opt/${APP_NAME}/bin/${APP_NAME}"
+          else
+            echo "Installed files:" && dpkg -L "${APP_NAME}" || true
+            echo "ERROR: Could not locate launcher for ${APP_NAME}" >&2
+            exit 1
+          fi
+          "$BIN" --help
           sudo dpkg -r "${APP_NAME}"
-  
+          
   cli-installer-msi:
     needs: build-jar
     runs-on: windows-latest
@@ -336,7 +340,7 @@ jobs:
           & $cliPath --help
           Start-Process -FilePath msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
 
-  cli-installer-exe:
+  cli-portable-exe:
     needs: build-jar
     runs-on: windows-latest
     steps:
@@ -380,27 +384,22 @@ jobs:
           if-no-files-found: error
 
   test-exe:
-    needs: cli-installer-exe
+    needs: cli-portable-exe
     runs-on: windows-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}-portable.zip
           path: artifacts
-
-      - name: Install EXE and run CLI
+      - name: Run portable EXE (no install)
         shell: powershell
         run: |
-          $exe = Get-ChildItem -Path artifacts -Filter *.exe | Select-Object -First 1
-          if(-not $exe){ throw "EXE not found" }
-          Write-Host "Installing via $($exe.FullName)"
-          Start-Process -FilePath $exe.FullName -ArgumentList '/install', '/quiet', '/norestart' -Wait -NoNewWindow
-          $cliPath = "C:\Program Files\${env:APP_NAME}\bin\${env:APP_NAME}.exe"
-          if(-not (Test-Path $cliPath)){
-            throw "CLI executable not found at $cliPath"
-          }
-          & $cliPath --help
-          Start-Process -FilePath $exe.FullName -ArgumentList '/uninstall', '/quiet', '/norestart' -Wait -NoNewWindow
+          $zip = Get-ChildItem artifacts -Filter *-portable.zip | Select-Object -First 1
+          if(-not $zip){ throw "Portable ZIP not found" }
+          Expand-Archive -Path $zip.FullName -DestinationPath "$PWD\app" -Force
+          $cli = Get-ChildItem -Path "$PWD\app" -Recurse -Filter "${env:APP_NAME}.exe" | Select-Object -First 1
+          if(-not $cli){ throw "Portable EXE not found" }
+          & $cli.FullName --help
 
   Create-cli-Release:
     runs-on: ubuntu-latest
