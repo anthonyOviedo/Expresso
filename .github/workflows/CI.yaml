@@ -293,41 +293,54 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Temurin JDK 24
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '24'
+
       - name: Install WiX
         shell: powershell
         run: choco install wixtoolset -y
+
       - name: Download JARs
         uses: actions/download-artifact@v4
         with:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
           path: target
-      - name: jpackage -> MSI
+
+      - name: jpackage -> app-image (CLI-only)
         shell: powershell
         run: |
-          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          New-Item -ItemType Directory -Force -Path out | Out-Null
           jpackage `
-            --type msi `
+            --type app-image `
             --name "$env:APP_NAME" `
             --input target `
+            --main-jar "${{ needs.build-jar.outputs.jar_name }}" `
             --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" `
             --main-class "$env:MAIN_CLASS" `
-            --dest dist `
-            --app-version "$env:VERSION" `
-            --vendor "Expresso Team" `
             --win-console `
-            --win-menu `
-            --win-menu-group "Expresso" `
-            --icon "$env:GITHUB_WORKSPACE\assets\icon.png" `
-            --win-dir-chooser
+            --dest out
+
+      - name: WiX harvest
+        shell: powershell
+        run: |
+              $src = Join-Path $PWD "out\$env:APP_NAME"
+              & "$env:WIX\bin\heat.exe" dir $src -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out harvest.wxs
+
+      - name: Build MSI (WiX)
+        shell: powershell
+        run: |
+          & "$env:WIX\bin\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" -out obj\ packaging/windows/product.wxs harvest.wxs
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\expressor-1.1.msi" obj\product.wixobj obj\harvest.wixobj
+
       - name: Upload .msi
         uses: actions/upload-artifact@v4
         with:
-          name: ${{env.APP_NAME}}-${{env.VERSION}}.msi
+          name: windows-msi
           path: dist/*.msi
           if-no-files-found: error
 
