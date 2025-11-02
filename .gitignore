@@ -12,9 +12,13 @@ expresso-core/target/*
 !/expresso-cli
 !/expresso-eshell
 !/scripts
+!/expresso*
 !dockerfile
 !pom.xml
 !README.md
 !.gitignore
 
 
+expresso-cli/target/expresso-cli-0.1.0.jar
+expresso-cli/target/expresso-cli-0.1.0.jar
+expresso-cli/target/original-expresso-cli-0.1.0.jar

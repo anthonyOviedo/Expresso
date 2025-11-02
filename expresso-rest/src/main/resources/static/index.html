@@ -3,11 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <title>Expresso Web UI</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
     <h1>Expresso Web UI</h1>
+    <span id="status" class="status">Ready</span>
     <button id="btnTheme">Toggle Theme</button>
   </header>
 
@@ -15,7 +17,20 @@
     <div class="panel">
       <header>Editor</header>
       <textarea id="editor">
-      System.out.println("Hello from Expresso!");
+// HelloWorld1.expresso
+
+/*
+  As HelloWorld0 but with a Binary Function
+  @author hooNous
+  @since Oct 6th, 2025
+*/
+
+let x = 6
+print(x)
+let y = 3
+print(y)
+let f = (x, z) -> z ** x + x*z + 1
+print(f(x, y)) // Expected 748
       </textarea>
       <div class="toolbar">
         <button id="btnTranspile">Transpile</button>
@@ -28,7 +43,8 @@
       <header>Output</header>
         <textarea id="output" readonly></textarea>
       <div class="toolbar">
-        <button id="btnCopy">Copy</button>
+        <button id="btnCopyOutput">Copy</button>
+        <button id="btnClearOutput" class="secondary">Clear</button>
       </div>
     </div>
   </main>

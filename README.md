@@ -27,85 +27,43 @@ https://expresso.tonyspublic.info/
 
 ---
 
-## Generar instaladores (.msi y .deb)
+## Generar instalador `.exe` (Windows)
 
-### Requisitos previos
-- **JDK 23+** con `jpackage` disponible en el `PATH`.
-- **Maven**.
-- **Windows / MSI**: [WiX Toolset 3.11+](https://wixtoolset.org/) debe estar instalado y en el `PATH`.
-- **Linux / DEB**: instala `fakeroot`, `binutils`, `build-essential`, `rpm` (dependencias empleadas por `jpackage`).
+El pipeline de CI usa [`jpackage`](https://docs.oracle.com/en/java/javase/23/jpackage/) para producir un ejecutable de Windows a partir del **CLI**. Estos pasos replican el job `cli-installer-exe` en tu entorno local.
 
-### Script (Bash) — Linux, macOS o Git Bash/WSL
-```bash
-# Generar .deb (Linux)
-./scripts/package-installers.sh --deb
+### Requisitos
+- **Windows 10/11** con PowerShell.
+- [Temurin JDK 24](https://adoptium.net/) (incluye `jpackage`).
+- [Apache Maven 3.9+](https://maven.apache.org/).
+- [WiX Toolset 3.11+](https://wixtoolset.org/) (necesario para `jpackage --type exe`).
 
-# Generar .msi (Windows desde Git Bash/WSL)
-./scripts/package-installers.sh --msi
-```
+Verifica que `java`, `mvn` y `jpackage` estén en el `PATH` antes de continuar.
 
-### Script PowerShell — Windows 
+### Pasos
 
 ```powershell
-# --- Install Java 24 (Temurin JDK) ---
-Invoke-WebRequest -Uri "https://github.com/adoptium/temurin24-binaries/releases/download/jdk-24.0.2%2B12/OpenJDK24U-jdk_x64_windows_hotspot_24.0.2_12.msi" -OutFile "$env:TEMP\temurin24.msi"
-Start-Process msiexec.exe -Wait -ArgumentList '/i', "$env:TEMP\temurin24.msi", '/qn', '/norestart'
-$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-24.0.2.12-hotspot"
-$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
-
-# --- Verify Java ---
-java -version
-
-# --- Install Maven ---
-Invoke-WebRequest -Uri "https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip" -OutFile "$env:TEMP\maven.zip"
-Expand-Archive -Path "$env:TEMP\maven.zip" -DestinationPath "C:\maven" -Force
-$env:PATH += ";C:\maven\apache-maven-3.9.9\bin"
-
-# --- Install WiX Toolset (for MSI packaging) ---
-Invoke-WebRequest -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip" -OutFile "$env:TEMP\wix311.zip"
-Expand-Archive -Path "$env:TEMP\wix311.zip" -DestinationPath "C:\wix311" -Force
-$env:PATH += ";C:\wix311"
-
-# --- Verify Maven + Java are ready ---
-java -version
-mvn -v
-
-# --- Build all modules ---
+# 1. Restaurar dependencias y compilar los módulos
 mvn -B -DskipTests clean package
 
-# --- Package CLI JAR into MSI installer ---
+# 2. Ejecutar jpackage igual que en CI
 & "$env:JAVA_HOME\bin\jpackage.exe" `
-  --type msi `
+  --type exe `
+  --name "expressor" `
   --input "expresso-cli\target" `
   --main-jar "expresso-cli-0.1.0.jar" `
-  --name "expressor" `
-  --app-version "3.1" `
   --main-class "com.diezam04.expresso.adapters.cli.Cli" `
+  --app-version "3.1" `
   --vendor "Expresso Team" `
   --win-console `
-  --win-shortcut `
   --win-menu `
   --win-menu-group "Expresso" `
   --win-dir-chooser `
   --dest "dist"
 
-# --- Add to PATH (persistent) ---
-setx JAVA_HOME "C:\Program Files\Eclipse Adoptium\jdk-24.0.2.12-hotspot"
-setx PATH "%JAVA_HOME%\bin;%PATH%;C:\Program Files\expressor"
-
-# --- Done ---
-Write-Host "Installer built in: dist\expressor-3.1.msi"
-Write-Host "Run after install: expressor run examples\HelloWorld0.expresso"
-
+Write-Host "Instalador listo: dist\expressor-3.1.exe"
 ```
 
-Ambos scripts verificarán que existan las dependencias mínimas (JDK 23+, Maven y, según la plataforma, WiX o fakeroot/binutils/build-essential/rpm). En Windows se utilizará `winget` (requiere consola con privilegios elevados); en Linux se usarán paquetes `apt` si están disponibles. A continuación compilan (`mvn -pl expresso-cli -am -DskipTests package`) y ejecutan `jpackage`. Los instaladores quedan en `out/installers/`.
-
-> Para generar el `.deb` en Windows utiliza WSL o cualquier shell Bash compatible.
-
-### Ejecutar el instalador generado
-- **Windows**: doble clic en el `.msi` generado.
-- **Linux (Debian/Ubuntu)**: `sudo apt install ./out/installers/expresso_<version>_amd64.deb`
+El ejecutable generado se firma como un instalador gráfico que crea accesos directos y agrega el comando `expressor` al menú Inicio. Ejecuta el `.exe` resultante para instalar la aplicación.
 
 ## Uso basico del CLI `expressor`
 > El CLI es una aplicación **Java** (no *shell script*). Los siguientes comandos son parte del **Sprint Inicial** como *mocks* funcionales.
