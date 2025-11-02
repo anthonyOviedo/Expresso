@@ -220,7 +220,6 @@ jobs:
           --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
           --icon assets/icon.png \
           --dest dist \
-          --resource-dir packaging \
           --verbose
       - name: Upload .deb artifact
         uses: actions/upload-artifact@v4
