@@ -1,5 +1,5 @@
 # Use full JDK, not JRE
-FROM eclipse-temurin:23-jdk
+FROM eclipse-temurin:24-jdk
 
 WORKDIR /app
 

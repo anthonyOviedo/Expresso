@@ -239,6 +239,7 @@ jobs:
             --app-version "${VERSION}" \
             --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
             --resource-dir packaging \
+            --icon assets/icon.png \
             --dest dist \
             --verbose
       - name: Upload .deb artifact
@@ -305,6 +306,7 @@ jobs:
             --win-console `
             --win-menu `
             --win-menu-group "Expresso" `
+            --icon "$env:GITHUB_WORKSPACE\assets\icon.png" `
             --win-dir-chooser
       - name: Upload .msi
         uses: actions/upload-artifact@v4
@@ -370,6 +372,7 @@ jobs:
             --win-console `
             --win-menu `
             --win-menu-group "Expresso" `
+            --icon "$env:GITHUB_WORKSPACE\assets\icon.png" `
             --win-dir-chooser
       - name: Upload .exe
         uses: actions/upload-artifact@v4

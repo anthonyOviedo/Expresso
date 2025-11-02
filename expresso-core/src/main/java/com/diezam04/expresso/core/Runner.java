@@ -8,6 +8,12 @@ public class Runner {
 public static String run(String classFilePath) {
     try {
         File f = new File(classFilePath);
+        if (!f.exists()) {
+            String msg = "Compiled class file not found: " + classFilePath;
+            System.err.println(msg);
+            return msg;
+        }
+
         String className = f.getName().replace(".class", "");
         String cp = f.getParent();
 
@@ -15,16 +21,32 @@ public static String run(String classFilePath) {
                 .redirectErrorStream(true)
                 .start();
 
+        StringBuilder output = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            return reader.lines()
-                    .reduce(new StringBuilder(),
-                            (sb, line) -> sb.append(line).append(System.lineSeparator()),
-                            StringBuilder::append)
-                    .toString()
-                    .trim();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append(System.lineSeparator());
+            }
         }
+
+        int exitCode = process.waitFor();
+        String result = output.toString().stripTrailing();
+
+        if (!result.isEmpty()) {
+            System.out.println(result);
+        }
+
+        if (exitCode != 0 && result.isEmpty()) {
+            String msg = "Execution finished with exit code " + exitCode;
+            System.err.println(msg);
+            return msg;
+        }
+
+        return result;
     } catch (Exception e) {
-        return "Error: " + e.getMessage();
+        String msg = "Execution error: " + e.getMessage();
+        System.err.println(msg);
+        return msg;
     }
 }
 
