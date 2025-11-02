@@ -66,10 +66,12 @@ jobs:
             ls expresso-rest/target >&2 || true
             exit 1
           fi
-          echo "rest_jar_name=$(basename "$REST_JAR")" >> "$GITHUB_OUTPUT"
           RELEASE_CLI="${APP_NAME}-cli-${VERSION}.jar"
+          RELEASE_REST="${APP_NAME}-rest-${VERSION}.jar"
           cp "$CLI_JAR" "expresso-cli/target/${RELEASE_CLI}"
+          cp "$REST_JAR" "expresso-rest/target/${RELEASE_REST}"
           echo "cli_jar_name=${RELEASE_CLI}" >> "$GITHUB_OUTPUT"
+          echo "rest_jar_name=${RELEASE_REST}" >> "$GITHUB_OUTPUT"
 
       - name: Upload Cli Jar
         uses: actions/upload-artifact@v4
@@ -252,15 +254,17 @@ jobs:
             --input target \
             --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" \
             --main-class "${MAIN_CLASS}" \
-            --app-version 1.1 \
+            --app-version "${VERSION}" \
             --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
             --resource-dir packaging \
             --dest dist \
             --verbose
+          DEB_FILE=$(find dist -maxdepth 1 -name '*.deb' -print -quit)
+          mv "$DEB_FILE" "dist/expressor-cli-${VERSION}.deb"
       - name: Upload .deb
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
+          name: "expressor-cli-${{ env.VERSION }}.deb"
           path: dist/*.deb
 
   test-deb:
@@ -269,7 +273,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
+          name: "expressor-cli-${{ env.VERSION }}.deb"
           path: artifacts
       - name: Install and verify .deb
         run: |
@@ -443,7 +447,7 @@ jobs:
       - name: Download .deb
         uses: actions/download-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
+          name: "expressor-cli-${{ env.VERSION }}.deb"
           path: artifacts/deb
 
       - name: Download .msi
@@ -509,6 +513,7 @@ jobs:
           generate_release_notes: true
           files: |
             artifacts/cli/*.jar
+            artifacts/rest/*.jar
             artifacts/deb/*.deb
             artifacts/msi/*.msi
             artifacts/exe/*.exe
