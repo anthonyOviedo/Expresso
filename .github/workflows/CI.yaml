@@ -204,24 +204,6 @@ jobs:
         with:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
           path: target
-      - name: Write Debian maintainer scripts (symlink in PATH)
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p packaging
-          cat > packaging/postinst <<'EOF'
-          #!/bin/sh
-          set -e
-          ln -sf /opt/"${{ env.APP_NAME }}"/bin/"${{ env.APP_NAME }}" /usr/local/bin/"${{ env.APP_NAME }}"
-          exit 0
-          EOF
-          cat > packaging/postrm <<'EOF'
-          #!/bin/sh
-          set -e
-          rm -f /usr/local/bin/"${{ env.APP_NAME }}"
-          exit 0
-          EOF
-          chmod 755 packaging/postinst packaging/postrm
       - name: jpackage -> .deb (CLI only)
         shell: bash
         run: |
