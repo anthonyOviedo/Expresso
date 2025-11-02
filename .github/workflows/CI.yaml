@@ -228,18 +228,19 @@ jobs:
           set -euo pipefail
           mkdir -p dist
           jpackage \
-            --type deb \
-            --name "${APP_NAME}" \
-            --linux-package-name "${APP_NAME}" \
-            --input target \
-            --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" \
-            --main-class "${MAIN_CLASS}" \
-            --app-version "${VERSION}" \
-            --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
-            --resource-dir packaging \
-            --icon assets/icon.png \
-            --dest dist \
-            --verbose
+          --type deb \
+          --name "${{ env.APP_NAME }}" \
+          --linux-package-name "${{ env.APP_NAME }}" \
+          --input target \
+          --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" \
+          --main-class "${{ env.MAIN_CLASS }}" \
+          --app-version "${{ env.VERSION }}" \
+          --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
+          --icon assets/icon.png \
+          --dest dist \
+          --linux-shortcut false \
+          --resource-dir packaging \
+          --verbose
       - name: Upload .deb artifact
         uses: actions/upload-artifact@v4
         with:
