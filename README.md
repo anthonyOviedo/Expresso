@@ -27,7 +27,7 @@ https://expresso.tonyspublic.info/
 
 ---
 
-## Generar instalador `.exe` (Windows)
+## Generar ejecutable `.exe` (Windows)
 
 El pipeline de CI usa [`jpackage`](https://docs.oracle.com/en/java/javase/23/jpackage/) para producir un ejecutable de Windows a partir del **CLI**. Estos pasos replican el job `cli-installer-exe` en tu entorno local.
 
@@ -35,7 +35,6 @@ El pipeline de CI usa [`jpackage`](https://docs.oracle.com/en/java/javase/23/jpa
 - **Windows 10/11** con PowerShell.
 - [Temurin JDK 24](https://adoptium.net/) (incluye `jpackage`).
 - [Apache Maven 3.9+](https://maven.apache.org/).
-- [WiX Toolset 3.11+](https://wixtoolset.org/) (necesario para `jpackage --type exe`).
 
 Verifica que `java`, `mvn` y `jpackage` estén en el `PATH` antes de continuar.
 
