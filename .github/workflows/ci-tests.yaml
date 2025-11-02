@@ -1,0 +1,125 @@
+name: test-cli-artifacts
+
+on:
+  workflow_call: {}
+
+env:
+  APP_NAME: expressor
+  MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
+  VERSION: 3.2
+
+permissions:
+  contents: read
+
+jobs:
+  test-rest-jar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - name: Download REST JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
+          path: target
+
+      - name: Validate REST health endpoint
+        run: |
+          set -euo pipefail
+          REST_JAR=$(find target -maxdepth 1 -name '*.jar' -print -quit)
+          echo "Launching $REST_JAR"
+          export SERVER_PORT=8081
+          java -jar "$REST_JAR" >/tmp/rest.log 2>&1 &
+          cleanup() {
+            kill %1 >/dev/null 2>&1 || true
+            wait %1 >/dev/null 2>&1 || true
+            cat /tmp/rest.log || true
+          }
+          trap cleanup INT TERM EXIT
+          for _ in $(seq 1 30); do
+            if curl -sSf http://127.0.0.1:8081/api/v1/health | grep -q 'ok'; then
+              echo "REST healthcheck passed"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "REST healthcheck failed" >&2
+          exit 1
+
+  test-cli-jar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - uses: actions/checkout@v4
+
+      - name: Download CLI JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          path: target
+
+      - name: Smoke test CLI JAR
+        run: |
+          set -euo pipefail
+          CLI_JAR=$(find target -maxdepth 1 -name '*.jar' -print -quit)
+          echo "Testing $CLI_JAR"
+          java -jar "$CLI_JAR" --help
+          mkdir -p output
+          java -jar "$CLI_JAR" transpile examples/HelloWorld0.expresso --out output --verbose
+          java -jar "$CLI_JAR" build examples/HelloWorld0.expresso --out output --verbose
+          java -jar "$CLI_JAR" run examples/HelloWorld0.expresso --out output --verbose
+
+  test-docker-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download REST JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
+          path: artifacts
+
+      - name: Build Docker image
+        run: |
+          set -euo pipefail
+          REST_JAR=$(find artifacts -maxdepth 1 -name '*.jar' -print -quit)
+          if [ -z "$REST_JAR" ]; then
+            echo "Rest jar not found" >&2
+            exit 1
+          fi
+          mkdir -p expresso-rest/target
+          cp "$REST_JAR" expresso-rest/target/
+          docker build -f dockerfile -t ${{ env.APP_NAME }}-rest:${{ env.VERSION }} .
+
+      - name: Smoke test Docker image
+        run: |
+          set -euo pipefail
+          IMAGE="${APP_NAME}-rest:${VERSION}"
+          CONTAINER="rest-smoke-${GITHUB_RUN_NUMBER}"
+          docker run --rm -d --name "$CONTAINER" -e SERVER_PORT=8082 -p 8082:8082 "$IMAGE"
+          cleanup() {
+            docker logs "$CONTAINER" || true
+            docker stop "$CONTAINER" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          for _ in $(seq 1 30); do
+            if curl -sSf http://127.0.0.1:8082/api/v1/health | grep -q 'ok'; then
+              echo "Dockerized REST healthcheck passed"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Dockerized REST API failed healthcheck" >&2
+          exit 1
