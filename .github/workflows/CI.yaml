@@ -211,10 +211,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '24'
+      - name: Prepare target directory
+        run: mkdir -p target
       - name: Download JARs
         uses: actions/download-artifact@v4
         with:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          path: target
       - name: Write Debian maintainer scripts (symlink in PATH)
         shell: bash
         run: |
@@ -244,7 +247,7 @@ jobs:
             --name "${APP_NAME}" \
             --linux-package-name "${APP_NAME}" \
             --input target \
-            --main-jar "${{ needs.build-jar.outputs.jar_name }}" \
+            --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" \
             --main-class "${MAIN_CLASS}" \
             --app-version 1.1 \
             --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
