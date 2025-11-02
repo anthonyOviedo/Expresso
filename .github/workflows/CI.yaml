@@ -236,8 +236,7 @@ jobs:
           rm -f /usr/local/bin/${APP_NAME}
           exit 0
           EOF
-          chmod 755 packaging/postinst packaging/postrm
-
+          chmod 755 packaging/postinst packaging/postrmy
       - name: jpackage -> .deb (CLI only)
         shell: bash
         run: |
@@ -318,7 +317,6 @@ jobs:
             --type app-image `
             --name "$env:APP_NAME" `
             --input target `
-            --main-jar "${{ needs.build-jar.outputs.jar_name }}" `
             --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" `
             --main-class "$env:MAIN_CLASS" `
             --win-console `
