@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 env:
-  APP_NAME: expressor
+  APP_NAME: expresso
   MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
   VERSION: 3.2
 
@@ -250,7 +250,7 @@ jobs:
             --input target \
             --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" \
             --main-class "${MAIN_CLASS}" \
-            --app-version 1.1 \
+            --app-version "${VERSION}" \
             --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
             --resource-dir packaging \
             --dest dist \
@@ -347,11 +347,7 @@ jobs:
           if(-not $msi){ throw "MSI not found" }
           Write-Host "Installing $($msi.FullName)"
           Start-Process -FilePath msiexec.exe -ArgumentList '/i', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
-          $cliPath = "C:\Program Files\${env:APP_NAME}\${env:APP_NAME}.exe"
-          if(-not (Test-Path $cliPath)){
-            throw "CLI executable not found at $cliPath"
-          }
-          & $cliPath --version
+          Start-Process -FilePath cmd.exe -ArgumentList '/c', '${env:APP_NAME} --version' -Wait -NoNewWindow
           Start-Process -FilePath msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
 
   cli-portable-exe:
@@ -405,11 +401,17 @@ jobs:
         with:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
           path: artifacts
-      - name: Run portable EXE (no install)
+      - name: Verify portable EXE
         shell: powershell
         run: |
           $exe = Get-ChildItem -Path artifacts -Filter *.exe | Select-Object -First 1
-          & $exe.FullName --help
+          if(-not $exe){ throw "Portable EXE not found" }
+          Push-Location $exe.DirectoryName
+          try {
+            Start-Process -FilePath cmd.exe -ArgumentList '/c', '${env:APP_NAME} --version' -Wait -NoNewWindow
+          } finally {
+            Pop-Location
+          }
 
   Create-cli-Release:
     runs-on: ubuntu-latest
@@ -456,6 +458,16 @@ jobs:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
           path: artifacts/exe
 
+      - name: Normalize artifact names
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          cp artifacts/cli/*.jar "release/${APP_NAME}-${VERSION}.jar"
+          cp artifacts/deb/*.deb "release/${APP_NAME}-${VERSION}.deb"
+          cp artifacts/msi/*.msi "release/${APP_NAME}-${VERSION}.msi"
+          cp artifacts/exe/*.exe "release/${APP_NAME}-${VERSION}.exe"
+
       - name: Stage REST JAR for release image
         shell: bash
         run: |
@@ -471,7 +483,6 @@ jobs:
       - name: Build REST Docker image (release copy)
         run: docker build -f dockerfile -t ${{ env.APP_NAME }}-rest:${{ env.VERSION }} .
 
-      # --- NEW: Push image to Docker Hub when creds are present ---
       - name: Docker Hub login
         if: needs.build-jar.outputs.dockerhub_available == 'true'
         uses: docker/login-action@v3
@@ -495,7 +506,6 @@ jobs:
           docker push "$REPO:${VERSION}"
           docker push "$REPO:latest"
           docker push "$REPO:${SHORT_SHA}"
-      # --- END NEW ---
 
       - name: Create GitHub Release + upload assets
         id: gh_release
@@ -506,10 +516,10 @@ jobs:
           name: "${{ env.APP_NAME }} v${{ env.VERSION }}"
           generate_release_notes: true
           files: |
-            artifacts/cli/*.jar
-            artifacts/deb/*.deb
-            artifacts/msi/*.msi
-            artifacts/exe/*.exe
+            release/*.jar
+            release/*.deb
+            release/*.msi
+            release/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
