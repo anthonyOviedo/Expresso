@@ -83,10 +83,44 @@ jobs:
           path: "expresso-rest/target/${{ steps.pick.outputs.rest_jar_name }}"
           if-no-files-found: error
   
+  test-rest-jar:
+    needs: build-jar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24  # ← ADD THIS
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - name: Download REST JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
+          path: target
+
+      - name: Validate REST health endpoint
+        run: |
+          set -euo pipefail
+          REST_JAR=$(find target -maxdepth 1 -name '*.jar' -print -quit)
+          echo "Launching $REST_JAR"
+          export SERVER_PORT=8081
+          java -jar "$REST_JAR" >/tmp/rest.log 2>&1 &
+          # ... rest of the script  
+  
   test-cli-jar:
     needs: build-jar
     runs-on: ubuntu-latest
     steps:
+
+      - name: Set up Temurin JDK 24 
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
       - uses: actions/checkout@v4
 
       - name: Download CLI JAR
@@ -105,42 +139,6 @@ jobs:
           java -jar "$CLI_JAR" transpile examples/HelloWorld0.expresso --out output --verbose
           java -jar "$CLI_JAR" build examples/HelloWorld0.expresso --out output --verbose
           java -jar "$CLI_JAR" run examples/HelloWorld0.expresso --out output --verbose
-
-  test-rest-jar:
-    needs: build-jar
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download REST JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
-          path: target
-
-      - name: Validate REST health endpoint
-        run: |
-          set -euo pipefail
-          REST_JAR=$(find target -maxdepth 1 -name '*.jar' -print -quit)
-          echo "Launching $REST_JAR"
-          export SERVER_PORT=8081
-          java -jar "$REST_JAR" >/tmp/rest.log 2>&1 &
-          PID=$!
-          cleanup() {
-            kill $PID >/dev/null 2>&1 || true
-            wait $PID 2>/dev/null || true
-            tail -n 100 /tmp/rest.log || true
-          }
-          trap cleanup EXIT
-          for _ in $(seq 1 30); do
-            if curl -sSf "http://127.0.0.1:${SERVER_PORT}/api/v1/health" | grep -q 'ok'; then
-              echo "REST healthcheck passed"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "REST API did not become healthy" >&2
-          exit 1
 
   test-docker-image:
     needs: build-jar
