@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   build-jar:
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     outputs:
       cli_jar_name: ${{ steps.pick.outputs.cli_jar_name }}
       rest_jar_name: ${{ steps.pick.outputs.rest_jar_name }}
@@ -85,7 +85,7 @@ jobs:
   
   test-cli-jar:
     needs: build-jar
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -108,7 +108,7 @@ jobs:
 
   test-rest-jar:
     needs: build-jar
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -144,7 +144,7 @@ jobs:
 
   test-docker-image:
     needs: build-jar
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -189,7 +189,7 @@ jobs:
 
   cli-installer-deb:
     needs: build-jar
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Temurin JDK 24
@@ -251,7 +251,7 @@ jobs:
 
   test-deb:
     needs: cli-installer-deb
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -405,7 +405,7 @@ jobs:
           Start-Process -FilePath $exe.FullName -ArgumentList '/uninstall', '/quiet', '/norestart' -Wait -NoNewWindow
 
   Create-cli-Release:
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     needs:
       - cli-installer-deb
       - cli-installer-msi
