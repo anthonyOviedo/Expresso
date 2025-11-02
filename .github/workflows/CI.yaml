@@ -16,9 +16,25 @@ jobs:
     needs: build
     uses: ./.github/workflows/ci-tests.yaml
 
-  packages:
+  webapp:
     needs: build
-    uses: ./.github/workflows/ci-packages.yaml
+    uses: ./.github/workflows/ci-webapp.yaml
+
+  package-deb:
+    needs: build
+    uses: ./.github/workflows/ci-package-deb.yaml
+    with:
+      cli_jar_name: ${{ needs.build.outputs.cli_jar_name }}
+
+  package-msi:
+    needs: build
+    uses: ./.github/workflows/ci-package-msi.yaml
+    with:
+      cli_jar_name: ${{ needs.build.outputs.cli_jar_name }}
+
+  package-exe:
+    needs: build
+    uses: ./.github/workflows/ci-package-exe.yaml
     with:
       cli_jar_name: ${{ needs.build.outputs.cli_jar_name }}
 
@@ -26,7 +42,10 @@ jobs:
     needs:
       - build
       - tests
-      - packages
+      - webapp
+      - package-deb
+      - package-msi
+      - package-exe
     uses: ./.github/workflows/ci-release.yaml
     with:
       dockerhub_available: ${{ needs.build.outputs.dockerhub_available }}

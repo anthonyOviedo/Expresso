@@ -1,0 +1,86 @@
+name: package-exe
+
+on:
+  workflow_call:
+    inputs:
+      cli_jar_name:
+        description: CLI jar filename built previously
+        required: true
+        type: string
+
+env:
+  APP_NAME: expressor
+  MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
+  VERSION: 3.2
+
+permissions:
+  contents: read
+
+jobs:
+  build-exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - name: Install WiX
+        shell: powershell
+        run: choco install wixtoolset -y
+
+      - name: Download CLI JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          path: target
+
+      - name: jpackage -> EXE
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          jpackage `
+            --type exe `
+            --name "$env:APP_NAME" `
+            --input target `
+            --main-jar "${{ inputs.cli_jar_name }}" `
+            --main-class "$env:MAIN_CLASS" `
+            --dest dist `
+            --app-version "$env:VERSION" `
+            --vendor "Expresso Team" `
+            --win-console `
+            --win-menu `
+            --win-menu-group "Expresso" `
+            --icon "$env:GITHUB_WORKSPACE\assets\icon.png" `
+            --win-dir-chooser
+
+      - name: Upload .exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
+          path: dist/*.exe
+          if-no-files-found: error
+
+  test-exe:
+    needs: build-exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
+          path: artifacts
+
+      - name: Verify portable EXE
+        shell: powershell
+        run: |
+          $exe = Get-ChildItem -Path artifacts -Filter *.exe | Select-Object -First 1
+          if(-not $exe){ throw "Portable EXE not found" }
+          Push-Location $exe.DirectoryName
+          try {
+            Start-Process -FilePath cmd.exe -ArgumentList '/c', '${env:APP_NAME} --version' -Wait -NoNewWindow
+          } finally {
+            Pop-Location
+          }

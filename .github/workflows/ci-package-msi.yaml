@@ -1,0 +1,84 @@
+name: package-msi
+
+on:
+  workflow_call:
+    inputs:
+      cli_jar_name:
+        description: CLI jar filename built previously
+        required: true
+        type: string
+
+env:
+  APP_NAME: expressor
+  MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
+  VERSION: 3.2
+
+permissions:
+  contents: read
+
+jobs:
+  build-msi:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - name: Install WiX
+        shell: powershell
+        run: choco install wixtoolset -y
+
+      - name: Download CLI JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          path: target
+
+      - name: jpackage -> MSI
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          jpackage `
+            --type msi `
+            --name "$env:APP_NAME" `
+            --input target `
+            --main-jar "${{ inputs.cli_jar_name }}" `
+            --main-class "$env:MAIN_CLASS" `
+            --dest dist `
+            --app-version "$env:VERSION" `
+            --vendor "Expresso Team" `
+            --win-console `
+            --win-menu `
+            --win-menu-group "Expresso" `
+            --icon "$env:GITHUB_WORKSPACE\assets\icon.png" `
+            --win-dir-chooser
+
+      - name: Upload .msi
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
+          path: dist/*.msi
+          if-no-files-found: error
+
+  test-msi:
+    needs: build-msi
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
+          path: artifacts
+
+      - name: Install MSI and run CLI
+        shell: powershell
+        run: |
+          $msi = Get-ChildItem -Path artifacts -Filter *.msi | Select-Object -First 1
+          if(-not $msi){ throw "MSI not found" }
+          Write-Host "Installing $($msi.FullName)"
+          Start-Process -FilePath msiexec.exe -ArgumentList '/i', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
+          Start-Process -FilePath cmd.exe -ArgumentList '/c', '${env:APP_NAME} --version' -Wait -NoNewWindow
+          Start-Process -FilePath msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
