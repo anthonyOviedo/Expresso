@@ -2,6 +2,8 @@
 /*.class
 *.jar
 expresso-core/target/*
+expresso-rest/target/*
+expresso-cli/target/*
 
 !.github/
 !/assets
