@@ -76,14 +76,14 @@ jobs:
       - name: Upload Cli Jar
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          name: "${{ env.APP_NAME }}-cli-${{ env.VERSION }}.jar"
           path: "expresso-cli/target/${{ steps.pick.outputs.cli_jar_name }}"
           if-no-files-found: error
 
       - name: Upload Rest Jar
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
+          name: "${{ env.APP_NAME }}-rest${{ env.VERSION }}.jar"
           path: "expresso-rest/target/${{ steps.pick.outputs.rest_jar_name }}"
           if-no-files-found: error
   
