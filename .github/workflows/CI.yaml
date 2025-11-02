@@ -201,7 +201,6 @@ jobs:
           exit 0
           chmod 755 packaging/postinst packaging/postrm
 
-
   cli-installer-deb:
     needs: build-jar
     runs-on: ubuntu-latest
@@ -216,6 +215,25 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+      - name: Write Debian maintainer scripts (symlink in PATH)
+        shell: bash
+        run: |
+          mkdir -p packaging
+
+          cat > packaging/postinst <<'EOF'
+          #!/bin/sh
+          ln -sf /opt/"${APP_NAME}"/bin/"${APP_NAME}" /usr/local/bin/"${APP_NAME}"
+          exit 0
+          EOF
+
+          cat > packaging/postrm <<'EOF'
+          # packaging/postrm
+          #!/bin/sh
+          rm -f /usr/local/bin/"${APP_NAME}"
+          exit 0
+          EOF
+          chmod 755 packaging/postinst packaging/postrm
+
       - name: jpackage -> .deb (CLI only)
         shell: bash
         run: |
