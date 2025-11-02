@@ -184,10 +184,27 @@ jobs:
           done
           echo "Dockerized REST API failed healthcheck" >&2
           exit 1
+       
+      - name: Write Debian maintainer scripts (symlink in PATH)
+        shell: bash
+        run: |
+          mkdir -p packaging
+          cat > packaging/postinst <<'EOF'
+          #!/bin/sh
+          ln -sf /opt/"${APP_NAME}"/bin/"${APP_NAME}" /usr/local/bin/"${APP_NAME}"
+          exit 0
+          EOF
+          cat > packaging/postrm <<'EOF'
+          # packaging/postrm
+          #!/bin/sh
+          rm -f /usr/local/bin/"${APP_NAME}"
+          exit 0
+          chmod 755 packaging/postinst packaging/postrm
+
 
   cli-installer-deb:
     needs: build-jar
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest\
     steps:
       - uses: actions/checkout@v4
       - name: Set up Temurin JDK 24
@@ -195,60 +212,27 @@ jobs:
         with:
           distribution: temurin
           java-version: '24'
-      - name: Install jpackage deps (deb)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y fakeroot dpkg-dev binutils file
       - name: Download JARs
         uses: actions/download-artifact@v4
         with:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
-          path: target
-      - name: Write Debian maintainer scripts (CLI; no xdg)
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p packaging/DEBIAN
-          cat > packaging/DEBIAN/postinst <<'EOF'
-          #!/bin/sh
-          set -e
-          ln -sf /opt/${APP_NAME}/bin/${APP_NAME} /usr/local/bin/${APP_NAME} || true
-          exit 0
-          EOF
-          cat > packaging/DEBIAN/postrm <<'EOF'
-          #!/bin/sh
-          set -e
-          rm -f /usr/local/bin/${APP_NAME} || true
-          exit 0
-          EOF
-          chmod 755 packaging/DEBIAN/postinst packaging/DEBIAN/postrm
-
-      - name: jpackage -> .deb (CLI only, no desktop)
+      - name: jpackage -> .deb (CLI only)
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
           jpackage \
             --type deb \
-            --name "${{ env.APP_NAME }}" \
-            --linux-package-name "${{ env.APP_NAME }}" \
+            --name "${APP_NAME}" \
+            --linux-package-name "${APP_NAME}" \
             --input target \
-            --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" \
-            --main-class "${{ env.MAIN_CLASS }}" \
-            --app-version "${{ env.VERSION }}" \
+            --main-jar "${{ needs.build-jar.outputs.jar_name }}" \
+            --main-class "${MAIN_CLASS}" \
+            --app-version 1.1 \
             --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
-            --dest dist \
-            --verbose \
             --resource-dir packaging \
-            --linux-shortcut false
-          # (Optional) omit --icon for pure-CLI; if you keep it, it’s fine because we override scripts.
-
-      - name: Upload .deb artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
-          path: dist/*.deb
-          if-no-files-found: error
+            --dest dist \
+            --verbose
 
   test-deb:
     needs: cli-installer-deb
@@ -276,7 +260,7 @@ jobs:
           fi
           "$BIN" --help
           sudo dpkg -r "${APP_NAME}"
-          
+     
   cli-installer-msi:
     needs: build-jar
     runs-on: windows-latest
