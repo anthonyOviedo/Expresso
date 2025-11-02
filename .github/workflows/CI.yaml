@@ -2,12 +2,12 @@ name: CI and CDelivery for the CLI app
 
 on:
   push:
-    branches: [dev]
+    branches: [main]
 
 env:
   APP_NAME: expressor
   MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
-  VERSION: 3.1
+  VERSION: 3.2
 
 permissions:
   contents: write
@@ -223,16 +223,17 @@ jobs:
         run: |
           mkdir -p packaging
 
-          cat > packaging/postinst <<'EOF'
+          cat > packaging/postinst <<EOF
           #!/bin/sh
-          ln -sf /opt/"${APP_NAME}"/bin/"${APP_NAME}" /usr/local/bin/"${APP_NAME}"
+          set -e
+          ln -sf /opt/${APP_NAME}/bin/${APP_NAME} /usr/local/bin/${APP_NAME}
           exit 0
           EOF
 
-          cat > packaging/postrm <<'EOF'
-          # packaging/postrm
+          cat > packaging/postrm <<EOF
           #!/bin/sh
-          rm -f /usr/local/bin/"${APP_NAME}"
+          set -e
+          rm -f /usr/local/bin/${APP_NAME}
           exit 0
           EOF
           chmod 755 packaging/postinst packaging/postrm
