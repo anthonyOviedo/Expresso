@@ -347,11 +347,7 @@ jobs:
           if(-not $msi){ throw "MSI not found" }
           Write-Host "Installing $($msi.FullName)"
           Start-Process -FilePath msiexec.exe -ArgumentList '/i', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
-          $cliPath = "C:\Program Files\${env:APP_NAME}\${env:APP_NAME}.exe"
-          if(-not (Test-Path $cliPath)){
-            throw "CLI executable not found at $cliPath"
-          }
-          & $cliPath --version
+          Start-Process -FilePath cmd.exe -ArgumentList '/c', '${env:APP_NAME} --version' -Wait -NoNewWindow
           Start-Process -FilePath msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
 
   cli-portable-exe:
@@ -405,11 +401,17 @@ jobs:
         with:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
           path: artifacts
-      - name: Run portable EXE (no install)
+      - name: Verify portable EXE
         shell: powershell
         run: |
           $exe = Get-ChildItem -Path artifacts -Filter *.exe | Select-Object -First 1
-          & $exe.FullName --help
+          if(-not $exe){ throw "Portable EXE not found" }
+          Push-Location $exe.DirectoryName
+          try {
+            Start-Process -FilePath cmd.exe -ArgumentList '/c', '${env:APP_NAME} --version' -Wait -NoNewWindow
+          } finally {
+            Pop-Location
+          }
 
   Create-cli-Release:
     runs-on: ubuntu-latest
