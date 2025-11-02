@@ -204,7 +204,7 @@ jobs:
 
   cli-installer-deb:
     needs: build-jar
-    runs-on: ubuntu-latest\
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Temurin JDK 24
