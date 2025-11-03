@@ -145,7 +145,7 @@ jobs:
             --main-class "$env:MAIN_CLASS" `
             --win-add-to-path `
             --dest out
-          $msi = Get-ChildItem -Path . -Filter *.msi | Select-Object -First 1
+          $msi = Get-ChildItem -Path out -Filter *.msi | Select-Object -First 1
           if (-not $msi) { throw "MSI not produced" }
           Move-Item -Force $msi.FullName (Join-Path "out" $msi.Name)
       
