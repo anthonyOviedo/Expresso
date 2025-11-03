@@ -7,15 +7,26 @@ on:
         description: Whether Docker Hub credentials are configured
         required: true
         type: string
+      app_name:
+        description: Application name
+        required: true
+        type: string
+      main_class:
+        description: CLI main class
+        required: true
+        type: string
+      version:
+        description: Application version
+        required: true
+        type: string
+      release_ref:
+        description: Git ref for the release
+        required: true
+        type: string
     outputs:
       release_url:
         description: URL of the GitHub release (may be empty on failure)
         value: ${{ jobs.release.outputs.release_url }}
-
-env:
-  APP_NAME: expresso
-  MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
-  VERSION: 3.2
 
 permissions:
   contents: write
@@ -24,6 +35,11 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      APP_NAME: ${{ inputs.app_name }}
+      MAIN_CLASS: ${{ inputs.main_class }}
+      VERSION: ${{ inputs.version }}
+      RELEASE_REF: ${{ inputs.release_ref }}
     outputs:
       release_url: ${{ steps.gh_release.outputs.html_url }}
     steps:

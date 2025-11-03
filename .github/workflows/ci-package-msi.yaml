@@ -7,11 +7,18 @@ on:
         description: CLI jar filename built previously
         required: true
         type: string
-
-env:
-  APP_NAME: expressor
-  MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
-  VERSION: 3.2
+      app_name:
+        description: Application name
+        required: true
+        type: string
+      main_class:
+        description: CLI main class
+        required: true
+        type: string
+      version:
+        description: Application version
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -19,6 +26,10 @@ permissions:
 jobs:
   build-msi:
     runs-on: windows-latest
+    env:
+      APP_NAME: ${{ inputs.app_name }}
+      MAIN_CLASS: ${{ inputs.main_class }}
+      VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -67,6 +78,10 @@ jobs:
   test-msi:
     needs: build-msi
     runs-on: windows-latest
+    env:
+      APP_NAME: ${{ inputs.app_name }}
+      MAIN_CLASS: ${{ inputs.main_class }}
+      VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/download-artifact@v4
         with:

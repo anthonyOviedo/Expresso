@@ -2,6 +2,19 @@ name: build-cli-artifacts
 
 on:
   workflow_call:
+    inputs:
+      app_name:
+        description: Application name
+        required: true
+        type: string
+      main_class:
+        description: CLI main class
+        required: true
+        type: string
+      version:
+        description: Application version
+        required: true
+        type: string
     outputs:
       cli_jar_name:
         description: CLI jar filename produced by the build
@@ -13,11 +26,6 @@ on:
         description: Whether Docker Hub credentials are present
         value: ${{ jobs.build.outputs.dockerhub_available }}
 
-env:
-  APP_NAME: expressor
-  MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
-  VERSION: 3.2
-
 permissions:
   contents: write
   actions: write
@@ -25,6 +33,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      APP_NAME: ${{ inputs.app_name }}
+      MAIN_CLASS: ${{ inputs.main_class }}
+      VERSION: ${{ inputs.version }}
     outputs:
       cli_jar_name: ${{ steps.pick.outputs.cli_jar_name }}
       rest_jar_name: ${{ steps.pick.outputs.rest_jar_name }}

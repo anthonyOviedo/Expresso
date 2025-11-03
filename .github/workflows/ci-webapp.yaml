@@ -1,11 +1,16 @@
 name: build-and-test-webapp
 
 on:
-  workflow_call: {}
-
-env:
-  APP_NAME: expressor
-  VERSION: 3.2
+  workflow_call:
+    inputs:
+      app_name:
+        description: Application name
+        required: true
+        type: string
+      version:
+        description: Application version
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -13,6 +18,9 @@ permissions:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    env:
+      APP_NAME: ${{ inputs.app_name }}
+      VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@v4
 

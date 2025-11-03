@@ -8,19 +8,35 @@ permissions:
   contents: write
   actions: write
 
+env:
+  APP_NAME: expressor
+  MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
+  VERSION: 3.2
+
 jobs:
   build:
     uses: ./.github/workflows/ci-build.yaml
+    with:
+      app_name: ${{ env.APP_NAME }}
+      main_class: ${{ env.MAIN_CLASS }}
+      version: ${{ env.VERSION }}
 
   tests:
     needs: build
     uses: ./.github/workflows/ci-tests.yaml
+    with:
+      app_name: ${{ env.APP_NAME }}
+      main_class: ${{ env.MAIN_CLASS }}
+      version: ${{ env.VERSION }}
 
   webapp:
     needs:
       - build
       - tests
     uses: ./.github/workflows/ci-webapp.yaml
+    with:
+      app_name: ${{ env.APP_NAME }}
+      version: ${{ env.VERSION }}
 
   package-deb:
     needs:
@@ -29,6 +45,9 @@ jobs:
     uses: ./.github/workflows/ci-package-deb.yaml
     with:
       cli_jar_name: ${{ needs.build.outputs.cli_jar_name }}
+      app_name: ${{ env.APP_NAME }}
+      main_class: ${{ env.MAIN_CLASS }}
+      version: ${{ env.VERSION }}
 
   package-msi:
     needs:
@@ -37,6 +56,9 @@ jobs:
     uses: ./.github/workflows/ci-package-msi.yaml
     with:
       cli_jar_name: ${{ needs.build.outputs.cli_jar_name }}
+      app_name: ${{ env.APP_NAME }}
+      main_class: ${{ env.MAIN_CLASS }}
+      version: ${{ env.VERSION }}
 
   package-exe:
     needs:
@@ -45,6 +67,9 @@ jobs:
     uses: ./.github/workflows/ci-package-exe.yaml
     with:
       cli_jar_name: ${{ needs.build.outputs.cli_jar_name }}
+      app_name: ${{ env.APP_NAME }}
+      main_class: ${{ env.MAIN_CLASS }}
+      version: ${{ env.VERSION }}
 
   release:
     needs:
@@ -57,3 +82,18 @@ jobs:
     uses: ./.github/workflows/ci-release.yaml
     with:
       dockerhub_available: ${{ needs.build.outputs.dockerhub_available }}
+      app_name: ${{ env.APP_NAME }}
+      main_class: ${{ env.MAIN_CLASS }}
+      version: ${{ env.VERSION }}
+      release_ref: ${{ github.ref_name }}
+
+  notify:
+    needs: release
+    if: always()
+    uses: ./.github/workflows/ci-discord.yaml
+    with:
+      status: ${{ needs.release.result }}
+      release_url: ${{ needs.release.outputs.release_url }}
+      app_name: ${{ env.APP_NAME }}
+      version: ${{ env.VERSION }}
+      ref_name: ${{ github.ref_name }}
