@@ -180,13 +180,14 @@ jobs:
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path out | Out-Null
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
           jpackage `
             --type msi `
             --name "$env:APP_NAME" `
             --input target `
             --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
             --main-class "$env:MAIN_CLASS" `
-            --dest dist `
+            --dest "dist" `
             --win-add-to-path
       
       - name: Upload .msi
