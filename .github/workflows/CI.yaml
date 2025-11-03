@@ -143,14 +143,15 @@ jobs:
             --input target `
             --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
             --main-class "$env:MAIN_CLASS" `
-            --win-add-to-path
+            --win-add-to-path `
+            --dest out
           $msi = Get-ChildItem -Path . -Filter *.msi | Select-Object -First 1
           if (-not $msi) { throw "MSI not produced" }
-          Move-Item -Force $msi.FullName (Join-Path "dist" $msi.Name)
+          Move-Item -Force $msi.FullName (Join-Path "out" $msi.Name)
       
       - name: Upload .msi
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
-          path: dist/*.msi
+          path: out/*.msi
           if-no-files-found: error
