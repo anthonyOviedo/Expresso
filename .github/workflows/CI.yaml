@@ -110,8 +110,6 @@ jobs:
   windows_packages:
     needs: [build-and-test]
     runs-on: windows-latest
-    env:
-      CLI_JAR_NAME: ${{ needs.build.outputs.cli_jar_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -139,7 +137,7 @@ jobs:
             --type msi `
             --name "$env:APP_NAME" `
             --input target `
-            --main-jar "$env:CLI_JAR_NAME" `
+            --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
             --main-class "$env:MAIN_CLI_CLASS" `
             --dest dist `
             --app-version "$env:VERSION" `
@@ -173,7 +171,7 @@ jobs:
             --type exe `
             --name "$env:APP_NAME" `
             --input target `
-            --main-jar "$env:CLI_JAR_NAME" `
+            --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
             --main-class "$env:MAIN_CLI_CLASS" `
             --dest dist `
             --app-version "$env:VERSION" `
@@ -206,8 +204,6 @@ jobs:
   deb_package:
     needs: [build-and-test]
     runs-on: ubuntu-latest
-    env:
-      CLI_JAR_NAME: ${{ needs.build.outputs.cli_jar_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -252,7 +248,7 @@ jobs:
             --name "${APP_NAME}" \
             --linux-package-name "${APP_NAME}" \
             --input target \
-            --main-jar "${CLI_JAR_NAME}" \
+            --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" \
             --main-class "${MAIN_CLI_CLASS}" \
             --app-version "${VERSION}" \
             --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
