@@ -320,7 +320,7 @@ jobs:
           sudo dpkg -r "${APP_NAME}"
 
   docker_image:
-    needs: build
+    needs: [build, test]
     runs-on: ubuntu-latest
     env:
       REST_JAR_NAME: ${{ needs.build.outputs.rest_jar_name }}
