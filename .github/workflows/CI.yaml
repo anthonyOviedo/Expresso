@@ -69,7 +69,7 @@ jobs:
       - name: Upload CLI jar
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar"
           path: "expresso-cli/target/${{ steps.prepare.outputs.cli_jar_name }}"
           if-no-files-found: error
 
@@ -127,7 +127,7 @@ jobs:
       - name: Download CLI jar
         uses: actions/download-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar"
           path: cli
 
       - name: Smoke test CLI jar
@@ -162,7 +162,7 @@ jobs:
       - name: Download CLI jar
         uses: actions/download-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar"
           path: target
 
       - name: Build MSI installer
@@ -257,7 +257,7 @@ jobs:
       - name: Download CLI jar
         uses: actions/download-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar"
           path: target
 
       - name: Write Debian maintainer scripts
@@ -298,7 +298,7 @@ jobs:
       - name: Upload Debian package
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-cli-${{ env.VERSION }}.deb"
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
           path: dist/*.deb
           if-no-files-found: error
 
@@ -361,3 +361,102 @@ jobs:
           REPO="${{ secrets.DOCKERHUB_USERNAME }}/${APP_NAME}"
           docker tag "$IMAGE" "$REPO:latest"
           docker push "$REPO:latest"
+
+  release:
+    needs:
+      - windows_packages
+      - deb_package
+      - docker_image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download CLI jar artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar"
+          path: release
+
+      - name: Download REST jar artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
+          path: release
+
+      - name: Download Windows MSI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.msi"
+          path: release
+
+      - name: Download Windows EXE artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.exe"
+          path: release
+
+      - name: Download Debian package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
+          path: release
+
+      - name: Create GitHub release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: "v${{ env.VERSION }}"
+          release_name: "Expresso v${{ env.VERSION }}"
+          body: "Automated release generated after successful packaging and Docker deployment."
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload CLI jar asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: "release/${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar"
+          asset_name: "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar"
+          asset_content_type: application/java-archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload REST jar asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: "release/${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
+          asset_name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
+          asset_content_type: application/java-archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows MSI asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: "release/${{ env.APP_NAME }}-${{ env.VERSION }}.msi"
+          asset_name: "${{ env.APP_NAME }}-${{ env.VERSION }}.msi"
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows EXE asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: "release/${{ env.APP_NAME }}-${{ env.VERSION }}.exe"
+          asset_name: "${{ env.APP_NAME }}-${{ env.VERSION }}.exe"
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Debian package asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: "release/${{ env.APP_NAME }}-cli-${{ env.VERSION }}.deb"
+          asset_name: "${{ env.APP_NAME }}-cli-${{ env.VERSION }}.deb"
+          asset_content_type: application/vnd.debian.binary-package
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
