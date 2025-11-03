@@ -5,7 +5,8 @@ on:
 
 env:
   APP_NAME: expresso
-  MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
+  MAIN_CLI_CLASS: com.diezam04.expresso.adapters.cli.Cli
+  MAIN_REST_CLASS: com.diezam04.expresso.adapters.rest.RestApi
 
 jobs:
   build-cli-jar:
@@ -107,16 +108,6 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
-      # - name: Discord notify failure (apps deployment)
-      #   if: failure()
-      #   uses: Ilshidur/action-discord@0.3.2
-      #   with:
-      #     args: |
-      #       🖥️ ❌ Failed Testing in development.
-      #       Commit `${{ github.sha }}`
-      #       Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      #   env:
-      #     DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} 
 
 
 

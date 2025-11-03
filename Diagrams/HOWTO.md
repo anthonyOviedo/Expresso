@@ -69,10 +69,10 @@ expressor --help
 
 # #########################################################################################  COMO crear un ejecutable para Windows ?
 param(
-  [string]$AppName   = $env:APP_NAME,     # e.g. "expressor"
-  [string]$MainClass = $env:MAIN_CLASS,   # e.g. "com.tony.expresso.Expressor"
-  [string]$JarName   = $env:JAR_NAME,     # e.g. "expresso-0.1.0-runner.jar"
-  [string]$Version   = "1.0.0"
+  [string]$AppName      = $env:APP_NAME,        # e.g. "expressor"
+  [string]$MainCliClass = $env:MAIN_CLI_CLASS,  # e.g. "com.tony.expresso.Expressor"
+  [string]$JarName      = $env:JAR_NAME,        # e.g. "expresso-0.1.0-runner.jar"
+  [string]$Version      = "1.0.0"
 )
 
 # --- Install WiX (like the Action) ---
@@ -99,7 +99,7 @@ jpackage `
   --name "$AppName" `
   --input "$TargetDir" `
   --main-jar "$JarName" `
-  --main-class "$MainClass" `
+  --main-class "$MainCliClass" `
   --win-console `
   --dest "$OutDir"
 
@@ -132,5 +132,3 @@ $MsiPath = Join-Path $DistDir "$AppName-$Version.msi"
   "$ObjDir\harvest.wixobj"
 
 Write-Host "MSI created at: $MsiPath"
-
-
