@@ -354,9 +354,11 @@ jobs:
       - name: Push Docker image
         run: |
           set -euo pipefail
-          IMAGE="${APP_NAME}:${VERSION}"
+          IMAGE="${APP_NAME}-rest:${VERSION}"
           REPO="${{ env.DOCKERHUB_USERNAME }}/${APP_NAME}"
+          docker tag "$IMAGE" "$REPO:${VERSION}"
           docker tag "$IMAGE" "$REPO:latest"
+          docker push "$REPO:${VERSION}"
           docker push "$REPO:latest"
 
   release:
