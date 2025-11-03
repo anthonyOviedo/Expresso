@@ -186,12 +186,12 @@ jobs:
             --input target `
             --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
             --main-class "$env:MAIN_CLASS" `
-            --dest out `
+            --dest dist `
             --win-add-to-path
       
       - name: Upload .msi
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
-          path: out/*.msi
+          path: dist/*.msi
           if-no-files-found: error
