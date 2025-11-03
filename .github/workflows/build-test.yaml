@@ -5,7 +5,8 @@ on:
 
 env:
   APP_NAME: expresso
-  MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
+  MAIN_CLI_CLASS: com.diezam04.expresso.adapters.cli.Cli
+  MAIN_REST_CLASS: com.diezam04.expresso.adapters.rest.RestApi
 
 jobs:
   build-cli-jar:
