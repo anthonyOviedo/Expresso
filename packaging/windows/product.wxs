@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Name="expressor" Manufacturer="Expresso Team" Id="*" UpgradeCode="9D0C2E50-6E78-4A8E-8799-8E9A9FFB1E11" Version="1.1.0" Language="1033">
+  <Product Name="expressor" Manufacturer="Expresso Team" Id="*" UpgradeCode="9D0C2E50-6E78-4A8E-8799-8E9A9FFB1E11" Version="3.2.0" Language="1033">
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine"/>
     <MediaTemplate EmbedCab="yes"/>
     <Directory Id="TARGETDIR" Name="SourceDir">
@@ -20,7 +20,7 @@
                  Action="set"
                  Part="last"
                  System="yes"
-                 Value="[INSTALLFOLDER]"/>      </Component>
+                 Value="[INSTALLFOLDER]bin"/>      </Component>
     </DirectoryRef>
   </Product>
 </Wix>
