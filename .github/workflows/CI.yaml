@@ -57,3 +57,11 @@ jobs:
     uses: ./.github/workflows/ci-release.yaml
     with:
       dockerhub_available: ${{ needs.build.outputs.dockerhub_available }}
+
+  notify:
+    needs: release
+    if: always()
+    uses: ./.github/workflows/ci-discord.yaml
+    with:
+      status: ${{ needs.release.result }}
+      release_url: ${{ needs.release.outputs.release_url }}
