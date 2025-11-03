@@ -11,6 +11,7 @@ env:
 jobs:
   build-cli-jar:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       jar_name: ${{ steps.pick.outputs.jar_name }}
       rest_jar_name: ${{ steps.pick-rest.outputs.rest_jar_name }}
