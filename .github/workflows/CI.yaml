@@ -396,15 +396,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          LOCAL="${APP_NAME}:${VERSION}"
           REPO="${{ env.DOCKERHUB_USERNAME }}/${APP_NAME}"
-          SHORT_SHA="${GITHUB_SHA::7}"
-          docker tag "$LOCAL" "$REPO:${VERSION}"
-          docker tag "$LOCAL" "$REPO:latest"
-          docker tag "$LOCAL" "$REPO:${SHORT_SHA}"
-          docker push "$REPO:${VERSION}"
           docker push "$REPO:latest"
-          docker push "$REPO:${SHORT_SHA}"
 
       - name: Create GitHub release
         id: gh_release
