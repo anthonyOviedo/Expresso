@@ -151,7 +151,6 @@ jobs:
             --win-console `
             --win-menu `
             --win-menu-group "Expresso" `
-            --icon "$env:GITHUB_WORKSPACE\assets\icon.ico" `
             --win-dir-chooser
 
       - name: Upload MSI
@@ -185,7 +184,6 @@ jobs:
             --win-console `
             --win-menu `
             --win-menu-group "Expresso" `
-            --icon "$env:GITHUB_WORKSPACE\assets\icon.ico" `
             --win-dir-chooser
 
       - name: Upload EXE
@@ -258,7 +256,6 @@ jobs:
             --main-class "${MAIN_CLI_CLASS}" \
             --app-version "${VERSION}" \
             --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
-            --icon "assets/icon.png" \
             --resource-dir packaging \
             --dest dist \
             --verbose
