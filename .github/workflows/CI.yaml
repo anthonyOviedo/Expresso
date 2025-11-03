@@ -394,7 +394,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          REPO="${{ env.DOCKERHUB_USERNAME }}/${APP_NAME}-rest"
+          REPO="${{ env.DOCKERHUB_USERNAME }}/${APP_NAME}"
           docker push "$REPO:latest"
 
       - name: Create GitHub release
