@@ -113,6 +113,42 @@ jobs:
           path: "${{ steps.prepare.outputs.rest_path }}"
           if-no-files-found: error
 
+  package-exe:
+    needs: build-and-test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar
+
+      - name: jpackage -> .exe (CLI-only)
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          jpackage `
+            --type exe `
+            --name "$env:APP_NAME" `
+            --input target `
+            --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
+            --main-class "$env:MAIN_CLASS" `
+            --win-console `
+            --dest out
+      - name: Upload .exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
+          path: out/*.exe
+          if-no-files-found: error
+  
   package-msi:
     needs: build-and-test
     runs-on: windows-latest
@@ -160,8 +196,6 @@ jobs:
           & "$env:WIX\bin\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" -out obj\ packaging/windows/product.wxs harvest.wxs
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\expressor-1.1.msi" obj\product.wixobj obj\harvest.wixobj
-
-
 
       - name: Upload .msi
         uses: actions/upload-artifact@v4
