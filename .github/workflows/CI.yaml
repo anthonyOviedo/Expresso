@@ -311,7 +311,7 @@ jobs:
           fi
           mkdir -p expresso-rest/target
           cp "$REST_JAR" expresso-rest/target/
-          docker build -f dockerfile -t ${APP_NAME}-rest:${VERSION} .
+          docker build -f dockerfile -t ${APP_NAME}:${VERSION} .
 
       - name: Docker Hub login
         uses: docker/login-action@v3
@@ -322,8 +322,8 @@ jobs:
       - name: Push Docker image
         run: |
           set -euo pipefail
-          IMAGE="${APP_NAME}-rest:${VERSION}"
-          REPO="${{ env.DOCKERHUB_USERNAME }}/${APP_NAME}-rest"
+          IMAGE="${APP_NAME}:${VERSION}"
+          REPO="${{ env.DOCKERHUB_USERNAME }}/${APP_NAME}"
           docker tag "$IMAGE" "$REPO:${VERSION}"
           docker tag "$IMAGE" "$REPO:latest"
           docker push "$REPO:${VERSION}"
