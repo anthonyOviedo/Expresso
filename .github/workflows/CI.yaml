@@ -154,7 +154,59 @@ jobs:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
           path: out/*.exe
           if-no-files-found: error
-  
+
+  test-exe:
+    needs: package-exe
+    runs-on: windows-latest
+    steps:
+      - name: Download installer
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
+          path: installer
+
+      - name: Install package
+        shell: powershell
+        run: |
+          $installer = Get-ChildItem installer -Filter *.exe | Select-Object -First 1
+          if (-not $installer) { throw "Installer not found" }
+          Start-Process -FilePath $installer.FullName -ArgumentList '/S' -Wait
+
+      - name: Verify CLI availability
+        shell: powershell
+        run: |
+          $roots = @(
+            Join-Path $env:ProgramFiles $env:APP_NAME,
+            Join-Path $env:LOCALAPPDATA "Programs\$env:APP_NAME"
+          ) | Where-Object { $_ -and (Test-Path $_) }
+          $cliPath = $null
+          foreach ($root in $roots) {
+            $candidate = Get-ChildItem -Path $root -Recurse -Filter "$env:APP_NAME.exe" -ErrorAction SilentlyContinue |
+              Where-Object { $_.FullName -match '\\bin\\' } |
+              Select-Object -First 1
+            if ($candidate) { $cliPath = $candidate.FullName; break }
+          }
+          if (-not $cliPath) {
+            Write-Host "Available roots searched: $roots"
+            throw "Could not locate installed CLI after EXE install"
+          }
+          & $cliPath --version
+
+      - name: Uninstall package
+        if: always()
+        shell: powershell
+        run: |
+          $roots = @(
+            Join-Path $env:ProgramFiles $env:APP_NAME,
+            Join-Path $env:LOCALAPPDATA "Programs\$env:APP_NAME"
+          ) | Where-Object { $_ -and (Test-Path $_) }
+          foreach ($root in $roots) {
+            $uninstaller = Get-ChildItem -Path $root -Filter "Uninstall*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($uninstaller) {
+              Start-Process -FilePath $uninstaller.FullName -ArgumentList '/S' -Wait
+            }
+          }
+
   package-msi:
     needs: build-and-test
     runs-on: windows-latest
@@ -216,6 +268,43 @@ jobs:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
           path: dist/*.msi
           if-no-files-found: error
+
+  test-msi:
+    needs: package-msi
+    runs-on: windows-latest
+    steps:
+      - name: Download MSI
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
+          path: installer
+
+      - name: Install MSI
+        shell: powershell
+        run: |
+          $msi = Get-ChildItem installer -Filter *.msi | Select-Object -First 1
+          if (-not $msi) { throw "MSI not found" }
+          Start-Process -FilePath msiexec.exe -ArgumentList '/i', $msi.FullName, '/qn', '/norestart' -Wait
+
+      - name: Verify CLI availability
+        shell: powershell
+        run: |
+          $installRoot = Join-Path $env:ProgramFiles $env:APP_NAME
+          if (-not (Test-Path $installRoot)) { throw "Install directory $installRoot not found" }
+          $cliPath = Get-ChildItem -Path $installRoot -Recurse -Filter "$env:APP_NAME.exe" -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match '\\bin\\' } |
+            Select-Object -First 1
+          if (-not $cliPath) { throw "CLI executable not found under $installRoot" }
+          & $cliPath.FullName --version
+
+      - name: Uninstall MSI
+        if: always()
+        shell: powershell
+        run: |
+          $msi = Get-ChildItem installer -Filter *.msi | Select-Object -First 1
+          if ($msi) {
+            Start-Process -FilePath msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait
+          }
 
   package_deb:
     needs: [build-and-test]
@@ -280,6 +369,32 @@ jobs:
           path: dist/*.deb
           if-no-files-found: error
 
+  test-deb:
+    needs: package_deb
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Debian package
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
+          path: installer
+
+      - name: Install package
+        run: |
+          set -euo pipefail
+          DEB=$(find installer -name '*.deb' -print -quit)
+          sudo dpkg -i "$DEB" || (sudo apt-get update && sudo apt-get -f -y install && sudo dpkg -i "$DEB")
+
+      - name: Verify CLI availability
+        run: |
+          set -euo pipefail
+          command -v "${{ env.APP_NAME }}"
+          "${{ env.APP_NAME }}" --version
+
+      - name: Uninstall package
+        if: always()
+        run: sudo dpkg -r "${{ env.APP_NAME }}"
+
   docker_image:
     needs: [build-and-test]
     runs-on: ubuntu-latest
@@ -316,11 +431,11 @@ jobs:
   release:
     runs-on: ubuntu-latest
     needs:
-      - package-exe
       - build-and-test
-      - package-msi
-      - package_deb
       - docker_image
+      - test-exe
+      - test-msi
+      - test-deb
     steps:
       - uses: actions/checkout@v4
 
