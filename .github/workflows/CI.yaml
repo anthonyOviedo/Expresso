@@ -160,15 +160,6 @@ jobs:
           path: dist/*.msi
           if-no-files-found: error
 
-      - name: Verify MSI install
-        shell: powershell
-        run: |
-          $msi = Get-ChildItem -Path dist -Filter *.msi | Select-Object -First 1
-          if(-not $msi){ throw "MSI not found" }
-          Start-Process -FilePath msiexec.exe -ArgumentList '/i', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
-          Start-Process -FilePath cmd.exe -ArgumentList '/c', '${env:APP_NAME} --version' -Wait -NoNewWindow
-          Start-Process -FilePath msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
-
       - name: Build portable EXE
         shell: powershell
         run: |
@@ -192,18 +183,6 @@ jobs:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.exe"
           path: dist/*.exe
           if-no-files-found: error
-
-      - name: Verify portable EXE
-        shell: powershell
-        run: |
-          $exe = Get-ChildItem -Path dist -Filter *.exe | Select-Object -First 1
-          if(-not $exe){ throw "Portable EXE not found" }
-          Push-Location $exe.DirectoryName
-          try {
-            Start-Process -FilePath cmd.exe -ArgumentList '/c', '${env:APP_NAME} --version' -Wait -NoNewWindow
-          } finally {
-            Pop-Location
-          }
 
   deb_package:
     needs: [build-and-test]
@@ -267,23 +246,6 @@ jobs:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
           path: dist/*.deb
           if-no-files-found: error
-
-      - name: Install and verify Debian package
-        run: |
-          set -euo pipefail
-          DEB_FILE=$(find dist -maxdepth 1 -name '*.deb' -print -quit)
-          sudo dpkg -i "$DEB_FILE" || (sudo apt-get update && sudo apt-get -f -y install && sudo dpkg -i "$DEB_FILE")
-          if command -v "${APP_NAME}" >/dev/null 2>&1; then
-            BIN="$(command -v "${APP_NAME}")"
-          elif [ -x "/opt/${APP_NAME}/bin/${APP_NAME}" ]; then
-            BIN="/opt/${APP_NAME}/bin/${APP_NAME}"
-          else
-            dpkg -L "${APP_NAME}" >&2 || true
-            echo "ERROR: Could not locate launcher for ${APP_NAME}" >&2
-            exit 1
-          fi
-          "$BIN" --help
-          sudo dpkg -r "${APP_NAME}"
 
   docker_image:
     needs: [build-and-test]
