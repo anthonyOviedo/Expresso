@@ -332,22 +332,6 @@ jobs:
           mkdir -p expresso-rest/target
           cp "$REST_JAR" expresso-rest/target/
 
-      - name: Build REST Docker image (release copy)
-        run: docker build -f dockerfile -t ${{ env.APP_NAME }}:latest .
-
-      - name: Docker Hub login
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Push REST image to Docker Hub
-        shell: bash
-        run: |
-          set -euo pipefail
-          REPO="${{ env.DOCKERHUB_USERNAME }}/${APP_NAME}"
-          docker push "$REPO:latest"
-
       - name: Create GitHub release
         id: gh_release
         uses: softprops/action-gh-release@v2
