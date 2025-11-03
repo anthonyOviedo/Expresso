@@ -10,7 +10,7 @@ permissions:
   actions: write
 
 env:
-  APP_NAME: expresso
+  APP_NAME: expressor
   MAIN_CLI_CLASS: com.diezam04.expresso.adapters.cli.Cli
   MAIN_REST_CLASS: com.diezam04.expresso.adapters.rest.RestApi
   VERSION: 3.2
@@ -147,6 +147,7 @@ jobs:
           if (-not $exe) { throw "Executable not produced in out/" }
           $target = Join-Path $exe.Directory.FullName ("${env:APP_NAME}-${env:VERSION}.exe")
           if ($exe.FullName -ne $target) { Move-Item -Force $exe.FullName $target }
+      
       - name: Upload .exe
         uses: actions/upload-artifact@v4
         with:
