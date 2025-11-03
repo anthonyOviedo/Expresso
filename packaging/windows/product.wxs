@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Name="expressor" Manufacturer="Expresso Team" Id="*" UpgradeCode="9D0C2E50-6E78-4A8E-8799-8E9A9FFB1E11" Version="1.1.0" Language="1033">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine"/>
+    <MediaTemplate EmbedCab="yes"/>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="expressor"/>
+      </Directory>
+    </Directory>
+    <Feature Id="Main" Title="expressor" Level="1">
+      <ComponentGroupRef Id="AppFiles"/>
+      <ComponentRef Id="EnvPath"/>
+    </Feature>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="EnvPath" Guid="D6B5B8E2-6C5A-4E89-9CB6-3E2AD0B5E9A1" Win64="yes">
+        <CreateFolder/>
+    <Environment Id="AddPath"
+                 Name="PATH"
+                 Action="set"
+                 Part="last"
+                 System="yes"
+                 Value="[INSTALLFOLDER]"/>      </Component>
+    </DirectoryRef>
+  </Product>
+</Wix>
