@@ -143,6 +143,10 @@ jobs:
             --main-class "$env:MAIN_CLASS" `
             --win-console `
             --dest out
+          $exe = Get-ChildItem -Path out -Filter *.exe | Select-Object -First 1
+          if (-not $exe) { throw "Executable not produced in out/" }
+          $target = Join-Path $exe.Directory.FullName ("${env:APP_NAME}-${env:VERSION}.exe")
+          if ($exe.FullName -ne $target) { Move-Item -Force $exe.FullName $target }
       - name: Upload .exe
         uses: actions/upload-artifact@v4
         with:
@@ -196,7 +200,8 @@ jobs:
         run: |
           & "$env:WIX\bin\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" -out obj\ packaging/windows/product.wxs harvest.wxs
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\expressor-1.1.msi" obj\product.wixobj obj\harvest.wixobj
+          $msiPath = Join-Path "dist" ("${env:APP_NAME}-${env:VERSION}.msi")
+          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o $msiPath obj\product.wixobj obj\harvest.wixobj
 
       - name: Upload .msi
         uses: actions/upload-artifact@v4
@@ -341,18 +346,6 @@ jobs:
         with:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.exe"
           path: artifacts/exe
-
-      - name: Stage REST jar for Docker image
-        shell: bash
-        run: |
-          set -euo pipefail
-          REST_JAR=$(find artifacts/rest -maxdepth 1 -name '*.jar' -print -quit)
-          if [ -z "$REST_JAR" ]; then
-            echo "REST jar not found in artifacts/rest" >&2
-            exit 1
-          fi
-          mkdir -p expresso-rest/target
-          cp "$REST_JAR" expresso-rest/target/
 
       - name: Create GitHub release
         id: gh_release
