@@ -188,21 +188,27 @@ jobs:
             --main-class "$env:MAIN_CLASS" `
             --win-console `
             --dest out
-
+      
       - name: WiX harvest
         shell: powershell
         run: |
-              $src = Join-Path $PWD "out\$env:APP_NAME"
-              & "$env:WIX\bin\heat.exe" dir $src -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out harvest.wxs
+          $src = Join-Path $PWD "out\$env:APP_NAME"
+          & "$env:WIX\bin\heat.exe" dir $src -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out "harvest.wxs"
 
       - name: Build MSI (WiX)
         shell: powershell
         run: |
-          & "$env:WIX\bin\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" -out obj\ packaging/windows/product.wxs harvest.wxs
-          New-Item -ItemType Directory -Force -Path dist | Out-Null
-          $msiPath = Join-Path "dist" ("${env:APP_NAME}-${env:VERSION}.msi")
-          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o $msiPath obj\product.wixobj obj\harvest.wixobj
-
+          New-Item -ItemType Directory -Force -Path "obj" | Out-Null
+          New-Item -ItemType Directory -Force -Path "dist" | Out-Null
+          & "$env:WIX\bin\candle.exe" -nologo -arch x64 `
+            -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" `
+            -out "obj\" `
+            "packaging/windows/product.wxs" "harvest.wxs"
+          $msiPath = Join-Path "dist" ("$($env:APP_NAME)-$($env:VERSION).msi")
+          & "$env:WIX\bin\light.exe" -nologo -ext WixUtilExtension -sval `
+            -o "$msiPath" `
+            "obj\product.wixobj" "obj\harvest.wixobj"
+      
       - name: Upload .msi
         uses: actions/upload-artifact@v4
         with:
