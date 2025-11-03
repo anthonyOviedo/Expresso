@@ -19,8 +19,7 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    outputs:
-      dockerhub_available: ${{ steps.check_docker.outputs.available }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -386,14 +385,12 @@ jobs:
         run: docker build -f dockerfile -t ${{ env.APP_NAME }}:latest .
 
       - name: Docker Hub login
-        if: needs.build-and-test.outputs.dockerhub_available == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Push REST image to Docker Hub
-        if: needs.build-and-test.outputs.dockerhub_available == 'true'
         shell: bash
         run: |
           set -euo pipefail
