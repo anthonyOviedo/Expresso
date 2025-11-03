@@ -113,7 +113,6 @@ jobs:
           path: "${{ steps.prepare.outputs.rest_path }}"
           if-no-files-found: error
 
-
   package-msi:
     needs: build-and-test
     runs-on: windows-latest
@@ -170,7 +169,6 @@ jobs:
           name: windows-msi
           path: dist/*.msi
           if-no-files-found: error
-
 
   deb_package:
     needs: [build-and-test]
