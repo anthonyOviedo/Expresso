@@ -255,6 +255,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Docker Hub login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Download REST jar
         uses: actions/download-artifact@v4
         with:
@@ -272,16 +278,6 @@ jobs:
           mkdir -p expresso-rest/target
           cp "$REST_JAR" expresso-rest/target/
           docker build -t antonyoviedo/expresso:latest .
-
-      - name: Docker Hub login
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Push Docker image
-        run: |
-          set -euo pipefail
           docker push antonyoviedo/expresso:latest
 
   release:
