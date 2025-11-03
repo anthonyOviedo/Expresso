@@ -399,6 +399,22 @@ jobs:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
           path: release
 
+      - name: Inspect release inputs
+        run: |
+          set -euo pipefail
+          echo "Preparing GitHub release for version ${{ env.VERSION }}"
+          echo "Listing contents of release directory:"
+          ls -al release
+          echo "Files grouped by type:"
+          echo "- CLI jar:"
+          ls -al release | grep -E "\-cli\.jar$" || echo "CLI jar not found"
+          echo "- REST jar:"
+          ls -al release | grep -E "\-rest\.jar$" || echo "REST jar not found"
+          echo "- Windows packages:"
+          ls -al release | grep -E '\.(msi|exe)$' || echo "Windows packages not found"
+          echo "- Debian packages:"
+          ls -al release | grep -E '\.deb$' || echo "Debian package not found"
+
       - name: Create GitHub release
         id: create_release
         uses: actions/create-release@v1
