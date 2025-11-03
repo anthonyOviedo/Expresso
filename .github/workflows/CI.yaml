@@ -4,6 +4,10 @@ on:
   push:
     branches: [dev]
 
+permissions:
+  contents: write
+  packages: write
+
 env:
   APP_NAME: expresso
   MAIN_CLI_CLASS: com.diezam04.expresso.adapters.cli.Cli
@@ -319,7 +323,7 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE="${APP_NAME}-rest:${VERSION}"
-          REPO="${{ env.DOCKERHUB_USERNAME }}/${APP_NAME}"
+          REPO="${{ env.DOCKERHUB_USERNAME }}/${APP_NAME}-rest"
           docker tag "$IMAGE" "$REPO:${VERSION}"
           docker tag "$IMAGE" "$REPO:latest"
           docker push "$REPO:${VERSION}"
@@ -378,7 +382,7 @@ jobs:
           cp "$REST_JAR" expresso-rest/target/
 
       - name: Build REST Docker image (release copy)
-        run: docker build -f dockerfile -t ${{ env.APP_NAME }}-rest:${{ env.VERSION }} .
+        run: docker build -f dockerfile -t ${{ env.APP_NAME }}:latest .
 
       - name: Docker Hub login
         if: needs.build-and-test.outputs.dockerhub_available == 'true'
@@ -392,7 +396,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          LOCAL="${APP_NAME}-rest:${VERSION}"
+          LOCAL="${APP_NAME}:${VERSION}"
           REPO="${{ env.DOCKERHUB_USERNAME }}/${APP_NAME}"
           SHORT_SHA="${GITHUB_SHA::7}"
           docker tag "$LOCAL" "$REPO:${VERSION}"
