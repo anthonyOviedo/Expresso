@@ -124,7 +124,7 @@ jobs:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar
           path: target
 
-      - name: jpackage -> .exe (CLI-only)
+      - name: jpackage -> .exe (Portable CLI)
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path out | Out-Null
@@ -133,9 +133,14 @@ jobs:
             --name "$env:APP_NAME" `
             --input target `
             --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
-            --main-class "$env:MAIN_CLASS" `
+            --main-class "$env:MAIN_CLI_CLASS" `
             --win-console `
+            --app-version "$env:VERSION" `
+            --vendor "Expresso Team" `
+            --description "Expresso CLI Tool" `
             --dest out
+          
+          # Rename to include version
           $exe = Get-ChildItem -Path out -Filter *.exe | Select-Object -First 1
           if (-not $exe) { throw "Executable not produced in out/" }
           $target = Join-Path $exe.Directory.FullName ("${env:APP_NAME}-${env:VERSION}.exe")
@@ -147,7 +152,7 @@ jobs:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
           path: out/*.exe
           if-no-files-found: error
-  
+
   package-msi:
     needs: build-and-test
     runs-on: windows-latest
@@ -160,53 +165,43 @@ jobs:
           distribution: temurin
           java-version: '24'
 
-      - name: Install WiX
-        shell: powershell
-        run: choco install wixtoolset -y
-
       - name: Download JARs
         uses: actions/download-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar
           path: target
 
-      - name: jpackage -> app-image (CLI-only)
+      - name: jpackage -> .msi (Installable with PATH)
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path out | Out-Null
           jpackage `
-            --type app-image `
+            --type msi `
             --name "$env:APP_NAME" `
             --input target `
             --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
-            --main-class "$env:MAIN_CLASS" `
+            --main-class "$env:MAIN_CLI_CLASS" `
             --win-console `
+            --win-shortcut `
+            --win-menu `
+            --win-menu-group "Expresso" `
+            --app-version "$env:VERSION" `
+            --vendor "Expresso Team" `
+            --description "Expresso CLI Tool" `
+            --about-url "https://github.com/yourusername/expresso" `
             --dest out
-      
-      - name: WiX harvest
-        shell: powershell
-        run: |
-          $src = Join-Path $PWD "out\$env:APP_NAME"
-          & "$env:WIX\bin\heat.exe" dir $src -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out "harvest.wxs"
-      - name: Build MSI (WiX)
-        shell: powershell
-        run: |
-          New-Item -ItemType Directory -Force -Path "obj" | Out-Null
-          New-Item -ItemType Directory -Force -Path "dist" | Out-Null
-          & "$env:WIX\bin\candle.exe" -nologo -arch x64 `
-            -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" `
-            -out "obj\" `
-            "packaging/windows/product.wxs" "harvest.wxs"
-          $msiPath = Join-Path "dist" ("$($env:APP_NAME)-$($env:VERSION).msi")
-          & "$env:WIX\bin\light.exe" -nologo -ext WixUtilExtension -sval `
-            -o "$msiPath" `
-            "obj\product.wixobj" "obj\harvest.wixobj"
+          
+          # Rename to include version
+          $msi = Get-ChildItem -Path out -Filter *.msi | Select-Object -First 1
+          if (-not $msi) { throw "MSI not produced in out/" }
+          $target = Join-Path $msi.Directory.FullName ("${env:APP_NAME}-${env:VERSION}.msi")
+          if ($msi.FullName -ne $target) { Move-Item -Force $msi.FullName $target }
       
       - name: Upload .msi
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
-          path: dist/*.msi
+          path: out/*.msi
           if-no-files-found: error
 
   package_deb:
@@ -302,6 +297,7 @@ jobs:
           cp "$REST_JAR" expresso-rest/target/
           docker build -t antonyoviedo/expresso:latest .
           docker push antonyoviedo/expresso:latest
+
   release:
     runs-on: ubuntu-latest
     needs:
@@ -384,7 +380,7 @@ jobs:
             ❌ **Release failed**
             • App: **${{ env.APP_NAME }}** v${{ env.VERSION }}
             • Ref: `${{ github.ref_name }}`
-            • Author: ${{ github.actor }}
+            • Author: $github.actor
             • Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       - name: Delete uploaded artifacts
         if: ${{ success() }}
