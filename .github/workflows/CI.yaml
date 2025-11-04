@@ -321,11 +321,8 @@ jobs:
             --dest dist `
             --app-version "$env:VERSION" `
             --vendor "Expresso Team" `
-            --win-console `
-            --win-menu `
-            --win-menu-group "Expresso" `
-            --icon "$env:GITHUB_WORKSPACE\assets\icon.png" `
-            --win-dir-chooser
+            --win-dir-chooser `
+            --verbose
       - name: Upload .msi
         uses: actions/upload-artifact@v4
         with:
@@ -353,7 +350,7 @@ jobs:
           if(-not (Test-Path $cliPath)){
             throw "CLI executable not found at $cliPath"
           }
-          & $cliPath --version
+          & $cliPath --help
           Start-Process -FilePath msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
 
   cli-portable-exe:
@@ -391,7 +388,8 @@ jobs:
             --win-menu `
             --win-menu-group "Expresso" `
             --icon "$env:GITHUB_WORKSPACE\assets\icon.png" `
-            --win-dir-chooser
+            --win-dir-chooser `
+            --verbose
       - name: Upload .exe
         uses: actions/upload-artifact@v4
         with:
