@@ -189,58 +189,25 @@ jobs:
             --app-version "$env:VERSION" `
             --vendor "Expresso Team" `
             --dest out-temp
-
-      - name: Create WiX configuration with PATH
+      - name: Prepare WiX template
         shell: powershell
         run: |
-          $wxsContent = @'
-            <?xml version="1.0" encoding="UTF-8"?>
-            <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-              <Product Id="*" Name="$env:APP_NAME" Language="1033" Version="$env:VERSION" Manufacturer="Expresso Team" UpgradeCode="YOUR-GUID-HERE">
-                <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
-                
-                <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-                <MediaTemplate EmbedCab="yes" />
+          $template = "packaging/windows/product.wxs"
+          if (-not (Test-Path $template)) {
+            throw "Template file $template not found"
+          }
 
-                <Feature Id="ProductFeature" Title="$env:APP_NAME" Level="1">
-                  <ComponentGroupRef Id="ProductComponents" />
-                  <ComponentGroupRef Id="PathComponents" />
-                </Feature>
-              </Product>
+          $appImageRoot = Join-Path "out-temp" $env:APP_NAME
+          $exePath = Join-Path $appImageRoot ("bin\{0}.exe" -f $env:APP_NAME)
+          if (-not (Test-Path $exePath)) {
+            throw "Expected executable not found at $exePath"
+          }
 
-              <Fragment>
-                <Directory Id="TARGETDIR" Name="SourceDir">
-                  <Directory Id="ProgramFilesFolder">
-                    <Directory Id="INSTALLFOLDER" Name="$env:APP_NAME" />
-                  </Directory>
-                </Directory>
-              </Fragment>
-
-              <Fragment>
-                <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-                  <Component Id="MainExecutable" Guid="YOUR-GUID-HERE">
-                    <File Id="MainExe" Source="out-temp\$env:APP_NAME\$env:APP_NAME.exe" KeyPath="yes" />
-                  </Component>
-                </ComponentGroup>
-              </Fragment>
-
-              <Fragment>
-                <ComponentGroup Id="PathComponents" Directory="INSTALLFOLDER">
-                  <Component Id="PathEnvironment" Guid="YOUR-GUID-HERE" KeyPath="yes">
-                    <Environment 
-                      Id="PATH" 
-                      Name="PATH" 
-                      Value="[INSTALLFOLDER]" 
-                      Permanent="no" 
-                      Part="last" 
-                      Action="set" 
-                      System="yes" />
-                  </Component>
-                </ComponentGroup>
-              </Fragment>
-            </Wix>'@
-          $wxsContent = $wxsContent -replace '\$env:APP_NAME', $env:APP_NAME -replace '\$env:VERSION', $env:VERSION
-          $wxsContent | Out-File -FilePath "product.wxs" -Encoding UTF8
+          $content = Get-Content $template -Raw
+          $content = $content.Replace('{{APP_NAME}}', $env:APP_NAME)
+          $content = $content.Replace('{{VERSION}}', $env:VERSION)
+          $content = $content.Replace('{{APP_EXE}}', (Resolve-Path $exePath).Path)
+          Set-Content -Path "product.wxs" -Value $content -Encoding UTF8
 
       - name: Build MSI with WiX
         shell: powershell
