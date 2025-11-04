@@ -165,45 +165,98 @@ jobs:
           distribution: temurin
           java-version: '24'
 
+      - name: Install WiX
+        shell: powershell
+        run: choco install wixtoolset -y
+
       - name: Download JARs
         uses: actions/download-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar
           path: target
 
-      - name: jpackage -> .msi (Installable with PATH)
+      - name: Create app image
         shell: powershell
         run: |
-          New-Item -ItemType Directory -Force -Path out | Out-Null
+          New-Item -ItemType Directory -Force -Path out-temp | Out-Null
           jpackage `
-            --type msi `
+            --type app-image `
             --name "$env:APP_NAME" `
             --input target `
             --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
             --main-class "$env:MAIN_CLI_CLASS" `
             --win-console `
-            --win-shortcut `
-            --win-menu `
-            --win-menu-group "Expresso" `
             --app-version "$env:VERSION" `
             --vendor "Expresso Team" `
-            --description "Expresso CLI Tool" `
-            --about-url "https://github.com/yourusername/expresso" `
-            --dest out
-          
-          # Rename to include version
-          $msi = Get-ChildItem -Path out -Filter *.msi | Select-Object -First 1
-          if (-not $msi) { throw "MSI not produced in out/" }
-          $target = Join-Path $msi.Directory.FullName ("${env:APP_NAME}-${env:VERSION}.msi")
-          if ($msi.FullName -ne $target) { Move-Item -Force $msi.FullName $target }
+            --dest out-temp
+
+      - name: Create WiX configuration with PATH
+        shell: powershell
+        run: |
+          $wxsContent = @'
+            <?xml version="1.0" encoding="UTF-8"?>
+            <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+              <Product Id="*" Name="$env:APP_NAME" Language="1033" Version="$env:VERSION" Manufacturer="Expresso Team" UpgradeCode="YOUR-GUID-HERE">
+                <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+                
+                <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+                <MediaTemplate EmbedCab="yes" />
+
+                <Feature Id="ProductFeature" Title="$env:APP_NAME" Level="1">
+                  <ComponentGroupRef Id="ProductComponents" />
+                  <ComponentGroupRef Id="PathComponents" />
+                </Feature>
+              </Product>
+
+              <Fragment>
+                <Directory Id="TARGETDIR" Name="SourceDir">
+                  <Directory Id="ProgramFilesFolder">
+                    <Directory Id="INSTALLFOLDER" Name="$env:APP_NAME" />
+                  </Directory>
+                </Directory>
+              </Fragment>
+
+              <Fragment>
+                <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+                  <Component Id="MainExecutable" Guid="YOUR-GUID-HERE">
+                    <File Id="MainExe" Source="out-temp\$env:APP_NAME\$env:APP_NAME.exe" KeyPath="yes" />
+                  </Component>
+                </ComponentGroup>
+              </Fragment>
+
+              <Fragment>
+                <ComponentGroup Id="PathComponents" Directory="INSTALLFOLDER">
+                  <Component Id="PathEnvironment" Guid="YOUR-GUID-HERE" KeyPath="yes">
+                    <Environment 
+                      Id="PATH" 
+                      Name="PATH" 
+                      Value="[INSTALLFOLDER]" 
+                      Permanent="no" 
+                      Part="last" 
+                      Action="set" 
+                      System="yes" />
+                  </Component>
+                </ComponentGroup>
+              </Fragment>
+            </Wix>
+            '@
+          $wxsContent = $wxsContent -replace '\$env:APP_NAME', $env:APP_NAME -replace '\$env:VERSION', $env:VERSION
+          $wxsContent | Out-File -FilePath "product.wxs" -Encoding UTF8
+
+      - name: Build MSI with WiX
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          & "$env:WIX\bin\candle.exe" -nologo -arch x64 -out "obj\" "product.wxs"
+          & "$env:WIX\bin\light.exe" -nologo -ext WixUtilExtension -sval -out "dist\$env:APP_NAME-$env:VERSION.msi" "obj\product.wixobj"
       
       - name: Upload .msi
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
-          path: out/*.msi
+          path: dist/*.msi
           if-no-files-found: error
-
+          
   package_deb:
     needs: [build-and-test]
     runs-on: ubuntu-latest
