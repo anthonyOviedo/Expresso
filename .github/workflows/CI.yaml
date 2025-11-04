@@ -198,6 +198,12 @@ jobs:
           }
 
           $appImageRoot = Join-Path "out-temp" $env:APP_NAME
+          Write-Host "Listing contents under $appImageRoot"
+          if (Test-Path $appImageRoot) {
+            Get-ChildItem -Recurse -Path $appImageRoot | ForEach-Object { Write-Host "  $_" }
+          } else {
+            Write-Host "Directory $appImageRoot not found"
+          }
           $exePath = Join-Path $appImageRoot ("bin\{0}.exe" -f $env:APP_NAME)
           if (-not (Test-Path $exePath)) {
             throw "Expected executable not found at $exePath"
