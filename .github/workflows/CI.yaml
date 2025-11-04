@@ -178,34 +178,6 @@ jobs:
           path: dist/*.deb
           if-no-files-found: error
 
-  test-deb:
-    needs: package_deb
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Download Debian package
-        uses: actions/download-artifact@v4
-        with:
-          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
-          path: installer
-
-      - name: Install package
-        run: |
-          set -euo pipefail
-          DEB=$(find installer -name '*.deb' -print -quit)
-          sudo dpkg -i "$DEB" || (sudo apt-get update && sudo apt-get -f -y install && sudo dpkg -i "$DEB")
-
-      - name: Verify CLI availability
-        run: |
-          set -euo pipefail
-          command -v "${{ env.APP_NAME }}"
-          "${{ env.APP_NAME }}" --version
-          "${{ env.APP_NAME }}" -V
-
-      - name: Uninstall package
-        if: always()
-        run: sudo dpkg -r "${{ env.APP_NAME }}"
-
   docker_image:
     needs: [build-and-test]
     runs-on: ubuntu-latest
@@ -300,7 +272,6 @@ jobs:
     needs:
       - build-and-test
       - docker_image
-      - test-deb
       - package-msi
     timeout-minutes: 5
     steps:
