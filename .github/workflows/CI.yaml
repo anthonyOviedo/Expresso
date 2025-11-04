@@ -238,8 +238,7 @@ jobs:
                   </Component>
                 </ComponentGroup>
               </Fragment>
-            </Wix>
-            '@
+            </Wix>'@
           $wxsContent = $wxsContent -replace '\$env:APP_NAME', $env:APP_NAME -replace '\$env:VERSION', $env:VERSION
           $wxsContent | Out-File -FilePath "product.wxs" -Encoding UTF8
 
