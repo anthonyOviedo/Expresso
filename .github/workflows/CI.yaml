@@ -113,159 +113,7 @@ jobs:
           name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
           path: "${{ steps.prepare.outputs.rest_path }}"
           if-no-files-found: error
-
-  package-msi:
-    needs: build-and-test
-    runs-on: windows-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Temurin JDK 24
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '24'
-
-      - name: Download JARs
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar
-          path: target
-
-      - name: jpackage -> MSI (CLI-only)
-        shell: powershell
-        run: |
-          New-Item -ItemType Directory -Force -Path out | Out-Null
-          jpackage `
-            --type msi `
-            --name "$env:APP_NAME" `
-            --input target `
-            --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
-            --main-class "$env:MAIN_CLASS" `
-            --win-add-to-path `
-            --dest out
-          $msi = Get-ChildItem -Path out -Filter *.msi | Select-Object -First 1
-          if (-not $msi) { throw "MSI not produced" }
-          Move-Item -Force $msi.FullName (Join-Path "out" $msi.Name)
-      
-      - name: Upload .msi
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
-          path: out/*.msi
-          if-no-files-found: error
           
-  package-exe:
-    needs: build-and-test
-    runs-on: windows-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Temurin JDK 24
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '24'
-
-      - name: Download JARs
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar
-          path: target
-
-      - name: jpackage -> .exe (CLI-only)
-        shell: powershell
-        run: |
-          New-Item -ItemType Directory -Force -Path out | Out-Null
-          jpackage `
-            --type exe `
-            --name "$env:APP_NAME" `
-            --input target `
-            --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
-            --main-class "$env:MAIN_CLASS" `
-            --win-console `
-            --dest out
-          $exe = Get-ChildItem -Path out -Filter *.exe | Select-Object -First 1
-          if (-not $exe) { throw "Executable not produced in out/" }
-          $target = Join-Path $exe.Directory.FullName ("${env:APP_NAME}-${env:VERSION}.exe")
-          if ($exe.FullName -ne $target) { Move-Item -Force $exe.FullName $target }
-      
-      - name: Upload .exe
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
-          path: out/*.exe
-          if-no-files-found: error
-
-  test-windows-installers:
-    needs:
-      - package-exe
-      - package-msi
-    runs-on: windows-latest
-    timeout-minutes: 5
-    steps:
-      - name: Download EXE
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
-          path: installer/exe
-
-      - name: Smoke test portable EXE
-        shell: powershell
-        run: |
-          $portableExe = Get-ChildItem installer/exe -Filter *.exe | Select-Object -First 1
-          if (-not $portableExe) { throw "Portable EXE not found" }
-          Push-Location $portableExe.Directory.FullName
-          try {
-            & ".\$($portableExe.Name)" --version
-            & ".\$($portableExe.Name)" -V
-          }
-          finally {
-            Pop-Location
-          }
-
-      - name: Download MSI
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
-          path: installer/msi
-
-      - name: Install MSI
-        shell: powershell
-        run: |
-          $msi = Get-ChildItem installer/msi -Filter *.msi | Select-Object -First 1
-          if (-not $msi) { throw "MSI not found" }
-          Start-Process -FilePath msiexec.exe -ArgumentList '/i', $msi.FullName, '/qn', '/norestart' -Wait
-
-      - name: Verify CLI after MSI install
-        shell: powershell
-        run: |
-          $installRoot = Join-Path $env:ProgramFiles $env:APP_NAME
-          if (-not (Test-Path $installRoot)) { throw "Install directory $installRoot not found" }
-          $cliPath = Get-ChildItem -Path $installRoot -Recurse -Filter "$env:APP_NAME.exe" -ErrorAction SilentlyContinue |
-            Where-Object { $_.FullName -match '\\bin\\' } |
-            Select-Object -First 1
-          if (-not $cliPath) { throw "CLI executable not found under $installRoot" }
-          Push-Location $env:TEMP
-          try {
-            & $cliPath.FullName --version
-            & $cliPath.FullName -V
-          }
-          finally {
-            Pop-Location
-          }
-
-      - name: Uninstall MSI
-        if: always()
-        shell: powershell
-        run: |
-          $msi = Get-ChildItem installer/msi -Filter *.msi | Select-Object -First 1
-          if ($msi) {
-            Start-Process -FilePath msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait
-          }
-
   package_deb:
     needs: [build-and-test]
     runs-on: ubuntu-latest
@@ -392,13 +240,68 @@ jobs:
           docker build -t antonyoviedo/expresso:latest .
           docker push antonyoviedo/expresso:latest
 
+  package-msi:
+    needs: build-and-test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - name: Install WiX
+        shell: powershell
+        run: choco install wixtoolset -y
+
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar"
+          path: artifacts
+
+      - name: jpackage -> app-image (CLI-only)
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          jpackage `
+            --type app-image `
+            --name "$env:APP_NAME" `
+            --input target `
+            --main-jar "${{ env.APP_NAME }}-${{ env.VERSION }}-cli.jar" `
+            --main-class "$env:MAIN_CLI_CLASS" `
+            --win-console `
+            --dest out
+
+      - name: WiX harvest
+        shell: powershell
+        run: |
+              $src = Join-Path $PWD "out\$env:APP_NAME"
+              & "$env:WIX\bin\heat.exe" dir $src -cg AppFiles -dr INSTALLFOLDER -srd -var var.SourceDir -ag -out harvest.wxs
+
+      - name: Build MSI (WiX)
+        shell: powershell
+        run: |
+          & "$env:WIX\bin\candle.exe" -arch x64 -dSourceDir="$(Join-Path $PWD "out\$env:APP_NAME")" -out obj\ packaging/windows/product.wxs harvest.wxs
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          & "$env:WIX\bin\light.exe" -ext WixUtilExtension -sval -o "dist\expressor-1.1.msi" obj\product.wixobj obj\harvest.wixobj
+
+      - name: Upload .msi
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: dist/*.msi
+          if-no-files-found: error
+
   release:
     runs-on: ubuntu-latest
     needs:
       - build-and-test
       - docker_image
-      - test-windows-installers
       - test-deb
+      - package-msi
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
