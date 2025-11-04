@@ -1,29 +1,27 @@
-name: CI Pipeline
+name: CI and CDelivery for the CLI app
 
 on:
   push:
-    branches:
-      - dev
-      - main
-
-permissions:
-  contents: write
-  packages: write
+    branches: [main]
 
 env:
   APP_NAME: expressor
-  MAIN_CLI_CLASS: com.diezam04.expresso.adapters.cli.Cli
-  MAIN_REST_CLASS: com.diezam04.expresso.adapters.rest.RestApi
+  MAIN_CLASS: com.diezam04.expresso.adapters.cli.Cli
+  VERSION: 3.2
+
+permissions:
+  contents: write
+  actions: write
 
 jobs:
-  build-linux:
+  build-jar:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
     outputs:
-      version: ${{ steps.stage.outputs.version }}
+      cli_jar_name: ${{ steps.pick.outputs.cli_jar_name }}
+      rest_jar_name: ${{ steps.pick.outputs.rest_jar_name }}
+      dockerhub_available: ${{ steps.check-docker.outputs.available }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Temurin JDK 24
         uses: actions/setup-java@v4
@@ -32,165 +30,526 @@ jobs:
           java-version: '24'
           cache: maven
 
-      - name: Build project
-        run: mvn -B clean package
+      - name: Build with Maven
+        run: mvn -B -DskipTests package
 
-      - name: Stage artifacts
-        id: stage
+      - name: Check Docker Hub credentials
+        id: check-docker
+        shell: bash
+        run: |
+          if [ -n "${DOCKERHUB_USERNAME:-}" ] && [ -n "${DOCKERHUB_TOKEN:-}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pick main cli and rest JAR
+        id: pick
+        shell: bash
         run: |
           set -euo pipefail
-          VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)
-          DIST=dist
-          mkdir -p "$DIST"
-
-          CLI_JAR=$(find expresso-cli/target -maxdepth 1 -type f -name "expresso-cli-*.jar" ! -name "original-*.jar" -print -quit)
-          REST_JAR=$(find expresso-rest/target -maxdepth 1 -type f -name "expresso-rest-*.jar" ! -name "*.original" -print -quit)
-
+          CLI_JAR=$(find expresso-cli/target -maxdepth 1 -type f -name '*-shaded.jar' | sort | head -n1)
           if [ -z "$CLI_JAR" ]; then
-            echo "Unable to locate CLI jar" >&2
+            CLI_JAR=$(find expresso-cli/target -maxdepth 1 -type f -name '*.jar' | sort | head -n1)
+          fi
+          if [ -z "$CLI_JAR" ]; then
+            echo "No CLI jar found under expresso-cli/target" >&2
+            ls expresso-cli/target >&2 || true
             exit 1
+          fi
+          REST_JAR=$(find expresso-rest/target -maxdepth 1 -type f -name '*-shaded.jar' | sort | head -n1)
+          if [ -z "$REST_JAR" ]; then
+            REST_JAR=$(find expresso-rest/target -maxdepth 1 -type f -name '*.jar' | sort | head -n1)
           fi
           if [ -z "$REST_JAR" ]; then
-            echo "Unable to locate REST jar" >&2
+            echo "No REST jar found under expresso-rest/target" >&2
+            ls expresso-rest/target >&2 || true
             exit 1
           fi
+          echo "rest_jar_name=$(basename "$REST_JAR")" >> "$GITHUB_OUTPUT"
+          RELEASE_CLI="${APP_NAME}-cli-${VERSION}.jar"
+          cp "$CLI_JAR" "expresso-cli/target/${RELEASE_CLI}"
+          echo "cli_jar_name=${RELEASE_CLI}" >> "$GITHUB_OUTPUT"
 
-          CLI_DEST="${APP_NAME}-${VERSION}-cli.jar"
-          REST_DEST="${APP_NAME}-${VERSION}-rest.jar"
-
-          cp "$CLI_JAR" "$DIST/$CLI_DEST"
-          cp "$REST_JAR" "$DIST/$REST_DEST"
-
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "cli=$DIST/$CLI_DEST" >> "$GITHUB_OUTPUT"
-          echo "rest=$DIST/$REST_DEST" >> "$GITHUB_OUTPUT"
-
-      - name: Smoke test CLI
-        run: |
-          set -euo pipefail
-          CLI_JAR='${{ steps.stage.outputs.cli }}'
-          java -jar "$CLI_JAR" --help
-          mkdir -p tmp-output
-          java -jar "$CLI_JAR" transpile examples/HelloWorld0.expresso --out tmp-output --verbose
-          java -jar "$CLI_JAR" build examples/HelloWorld0.expresso --out tmp-output --verbose
-          java -jar "$CLI_JAR" run examples/HelloWorld0.expresso --out tmp-output --verbose
-          java -jar "$CLI_JAR" -V
-
-      - name: Smoke test REST API
-        run: |
-          set -euo pipefail
-          REST_JAR='${{ steps.stage.outputs.rest }}'
-          export SERVER_PORT=8081
-          java -jar "$REST_JAR" >/tmp/rest.log 2>&1 &
-          PID=$!
-          cleanup() {
-            kill "$PID" >/dev/null 2>&1 || true
-            wait "$PID" >/dev/null 2>&1 || true
-            tail -n 100 /tmp/rest.log || true
-          }
-          trap cleanup EXIT
-          for _ in $(seq 1 30); do
-            if curl -sSf "http://127.0.0.1:${SERVER_PORT}/api/v1/health" | grep -q 'ok'; then
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "REST API failed healthcheck" >&2
-          exit 1
-
-      - name: Build Debian package (jpackage)
-        run: |
-          set -euo pipefail
-          VERSION='${{ steps.stage.outputs.version }}'
-          DIST=dist
-          CLI_JAR_BASENAME=$(basename '${{ steps.stage.outputs.cli }}')
-
-          mkdir -p packaging/debian
-          cat <<'EOF' | sed 's/^ *//' > packaging/debian/postinst
-            #!/bin/sh
-            set -e
-            ln -sf /opt/${APP_NAME}/bin/${APP_NAME} /usr/local/bin/${APP_NAME}
-            exit 0
-          EOF
-          cat <<'EOF' | sed 's/^ *//' > packaging/debian/postrm
-            #!/bin/sh
-            set -e
-            rm -f /usr/local/bin/${APP_NAME}
-            exit 0
-          EOF
-          chmod 755 packaging/debian/postinst packaging/debian/postrm
-
-          jpackage \
-            --type deb \
-            --name "${APP_NAME}" \
-            --linux-package-name "${APP_NAME}" \
-            --input "$DIST" \
-            --main-jar "$CLI_JAR_BASENAME" \
-            --main-class "${MAIN_CLI_CLASS}" \
-            --app-version "$VERSION" \
-            --linux-deb-maintainer "Expresso Team <support@expresso.dev>" \
-            --resource-dir packaging/debian \
-            --dest "$DIST" \
-            --verbose
-
-      - name: Upload Linux artifacts
+      - name: Upload Cli Jar
         uses: actions/upload-artifact@v4
         with:
-          name: expressor-${{ steps.stage.outputs.version }}-linux
-          path: dist/
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          path: "expresso-cli/target/${{ steps.pick.outputs.cli_jar_name }}"
+          if-no-files-found: error
 
-  package-windows:
-    runs-on: windows-latest
-    timeout-minutes: 30
-    needs: build-linux
+      - name: Upload Rest Jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
+          path: "expresso-rest/target/${{ steps.pick.outputs.rest_jar_name }}"
+          if-no-files-found: error
+  
+  test-rest-jar:
+    needs: build-jar
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Temurin JDK 24
+      - name: Set up Temurin JDK 24  # ← ADD THIS
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '24'
 
-      - name: Download staged artifacts
+      - name: Download REST JAR
         uses: actions/download-artifact@v4
         with:
-          name: expressor-${{ needs.build-linux.outputs.version }}-linux
-          path: dist
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
+          path: target
 
-      - name: Build Windows executable (jpackage)
-        shell: pwsh
+      - name: Validate REST health endpoint
         run: |
-          $version = '${{ needs.build-linux.outputs.version }}'
-          $dist = "dist"
-          $cliJar = Join-Path $dist "${env:APP_NAME}-$version-cli.jar"
-          if (-not (Test-Path $cliJar)) {
-            throw "CLI jar not found at $cliJar"
+          set -euo pipefail
+          REST_JAR=$(find target -maxdepth 1 -name '*.jar' -print -quit)
+          echo "Launching $REST_JAR"
+          export SERVER_PORT=8081
+          java -jar "$REST_JAR" >/tmp/rest.log 2>&1 &
+          # ... rest of the script  
+  
+  test-cli-jar:
+    needs: build-jar
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Set up Temurin JDK 24 
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+
+      - uses: actions/checkout@v4
+
+      - name: Download CLI JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          path: target
+
+      - name: Smoke test CLI JAR
+        run: |
+          set -euo pipefail
+          CLI_JAR=$(find target -maxdepth 1 -name '*.jar' -print -quit)
+          echo "Testing $CLI_JAR"
+          java -jar "$CLI_JAR" --help
+          mkdir -p output
+          java -jar "$CLI_JAR" transpile examples/HelloWorld0.expresso --out output --verbose
+          java -jar "$CLI_JAR" build examples/HelloWorld0.expresso --out output --verbose
+          java -jar "$CLI_JAR" run examples/HelloWorld0.expresso --out output --verbose
+
+  test-docker-image:
+    needs: build-jar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download REST JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
+          path: artifacts
+
+      - name: Build Docker image
+        run: |
+          set -euo pipefail
+          REST_JAR=$(find artifacts -maxdepth 1 -name '*.jar' -print -quit)
+          if [ -z "$REST_JAR" ]; then
+            echo "Rest jar not found" >&2
+            exit 1
+          fi
+          mkdir -p expresso-rest/target
+          cp "$REST_JAR" expresso-rest/target/
+          docker build -f dockerfile -t ${{ env.APP_NAME }}-rest:${{ env.VERSION }} .
+
+      - name: Smoke test Docker image
+        run: |
+          set -euo pipefail
+          IMAGE="${APP_NAME}-rest:${VERSION}"
+          CONTAINER="rest-smoke-${GITHUB_RUN_NUMBER}"
+          docker run --rm -d --name "$CONTAINER" -e SERVER_PORT=8082 -p 8082:8082 "$IMAGE"
+          cleanup() {
+            docker logs "$CONTAINER" || true
+            docker stop "$CONTAINER" >/dev/null 2>&1 || true
           }
+          trap cleanup EXIT
+          for _ in $(seq 1 30); do
+            if curl -sSf http://127.0.0.1:8082/api/v1/health | grep -q 'ok'; then
+              echo "Dockerized REST healthcheck passed"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Dockerized REST API failed healthcheck" >&2
+          exit 1
+       
+      - name: Write Debian maintainer scripts (symlink in PATH)
+        shell: bash
+        run: |
+          mkdir -p packaging
+          cat > packaging/postinst <<'EOF'
+          #!/bin/sh
+          ln -sf /opt/"${APP_NAME}"/bin/"${APP_NAME}" /usr/local/bin/"${APP_NAME}"
+          exit 0
+          EOF
+          cat > packaging/postrm <<'EOF'
+          # packaging/postrm
+          #!/bin/sh
+          rm -f /usr/local/bin/"${APP_NAME}"
+          exit 0
+          chmod 755 packaging/postinst packaging/postrm
 
-          $outputDir = Join-Path $dist "windows"
-          New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+  cli-installer-deb:
+    needs: build-jar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+      - name: Prepare target directory
+        run: mkdir -p target
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          path: target
+      - name: Write Debian maintainer scripts (symlink in PATH)
+        shell: bash
+        run: |
+          mkdir -p packaging
 
+          cat > packaging/postinst <<EOF
+          #!/bin/sh
+          set -e
+          ln -sf /opt/${APP_NAME}/bin/${APP_NAME} /usr/local/bin/${APP_NAME}
+          exit 0
+          EOF
+
+          cat > packaging/postrm <<EOF
+          #!/bin/sh
+          set -e
+          rm -f /usr/local/bin/${APP_NAME}
+          exit 0
+          EOF
+          chmod 755 packaging/postinst packaging/postrm
+
+      - name: jpackage -> .deb (CLI only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          jpackage \
+            --type deb \
+            --name "${APP_NAME}" \
+            --linux-package-name "${APP_NAME}" \
+            --input target \
+            --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" \
+            --main-class "${MAIN_CLASS}" \
+            --app-version 1.1 \
+            --linux-deb-maintainer "Expresso Team <antony-08@hotmail.com>" \
+            --resource-dir packaging \
+            --dest dist \
+            --verbose
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
+          path: dist/*.deb
+
+  test-deb:
+    needs: cli-installer-deb
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
+          path: artifacts
+      - name: Install and verify .deb
+        run: |
+          set -euo pipefail
+          DEB_FILE=$(find artifacts -maxdepth 1 -name '*.deb' -print -quit)
+          echo "Inspecting $DEB_FILE"
+          dpkg-deb --info "$DEB_FILE" || true
+          sudo dpkg -i "$DEB_FILE" || (sudo apt-get update && sudo apt-get -f -y install && sudo dpkg -i "$DEB_FILE")
+          if command -v "${APP_NAME}" >/dev/null 2>&1; then
+            BIN="$(command -v "${APP_NAME}")"
+          elif [ -x "/opt/${APP_NAME}/bin/${APP_NAME}" ]; then
+            BIN="/opt/${APP_NAME}/bin/${APP_NAME}"
+          else
+            echo "Installed files:" && dpkg -L "${APP_NAME}" || true
+            echo "ERROR: Could not locate launcher for ${APP_NAME}" >&2
+            exit 1
+          fi
+          "$BIN" --help
+          sudo dpkg -r "${APP_NAME}"
+     
+  cli-installer-msi:
+    needs: build-jar
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+      - name: Install WiX
+        shell: powershell
+        run: choco install wixtoolset -y
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          path: target
+      - name: jpackage -> MSI
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          jpackage `
+            --type msi `
+            --name "$env:APP_NAME" `
+            --input target `
+            --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" `
+            --main-class "$env:MAIN_CLASS" `
+            --dest dist `
+            --app-version "$env:VERSION" `
+            --vendor "Expresso Team" `
+            --win-console `
+            --win-menu `
+            --win-menu-group "Expresso" `
+            --icon "$env:GITHUB_WORKSPACE\assets\icon.png" `
+            --win-dir-chooser
+      - name: Upload .msi
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{env.APP_NAME}}-${{env.VERSION}}.msi
+          path: dist/*.msi
+          if-no-files-found: error
+
+  test-msi:
+    needs: cli-installer-msi
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
+          path: artifacts
+
+      - name: Install MSI and run CLI
+        shell: powershell
+        run: |
+          $msi = Get-ChildItem -Path artifacts -Filter *.msi | Select-Object -First 1
+          if(-not $msi){ throw "MSI not found" }
+          Write-Host "Installing $($msi.FullName)"
+          Start-Process -FilePath msiexec.exe -ArgumentList '/i', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
+          $cliPath = "C:\Program Files\${env:APP_NAME}\${env:APP_NAME}.exe"
+          if(-not (Test-Path $cliPath)){
+            throw "CLI executable not found at $cliPath"
+          }
+          & $cliPath --version
+          Start-Process -FilePath msiexec.exe -ArgumentList '/x', $msi.FullName, '/qn', '/norestart' -Wait -NoNewWindow
+
+  cli-portable-exe:
+    needs: build-jar
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Temurin JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '24'
+      - name: Install WiX
+        shell: powershell
+        run: choco install wixtoolset -y
+      - name: Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          path: target
+      - name: jpackage -> EXE
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
           jpackage `
             --type exe `
             --name "$env:APP_NAME" `
-            --app-version "$version" `
-            --input $dist `
-            --main-jar (Split-Path -Leaf $cliJar) `
-            --main-class "$env:MAIN_CLI_CLASS" `
+            --input target `
+            --main-jar "${{ needs.build-jar.outputs.cli_jar_name }}" `
+            --main-class "$env:MAIN_CLASS" `
+            --dest dist `
+            --app-version "$env:VERSION" `
+            --vendor "Expresso Team" `
             --win-console `
-            --dest $outputDir `
-            --verbose
-
-          $exe = Get-ChildItem -Path $outputDir -Filter "*.exe" | Select-Object -First 1
-          if (-not $exe) {
-            throw "jpackage did not produce an executable"
-          }
-          Write-Host "Generated executable: $($exe.FullName)"
-
-      - name: Upload Windows executable
+            --win-menu `
+            --win-menu-group "Expresso" `
+            --icon "$env:GITHUB_WORKSPACE\assets\icon.png" `
+            --win-dir-chooser
+      - name: Upload .exe
         uses: actions/upload-artifact@v4
         with:
-          name: expressor-${{ needs.build-linux.outputs.version }}-windows
-          path: dist/windows/*.exe
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
+          path: dist/*.exe
+          if-no-files-found: error
+
+  test-exe:
+    needs: cli-portable-exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
+          path: artifacts
+      - name: Run portable EXE (no install)
+        shell: powershell
+        run: |
+          $exe = Get-ChildItem -Path artifacts -Filter *.exe | Select-Object -First 1
+          & $exe.FullName --help
+
+  Create-cli-Release:
+    runs-on: ubuntu-latest
+    needs:
+      - cli-installer-deb
+      - cli-installer-msi
+      - cli-portable-exe
+      - test-cli-jar
+      - test-rest-jar
+      - test-deb
+      - test-msi
+      - test-exe
+      - test-docker-image
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download built JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.jar"
+          path: artifacts/cli
+
+      - name: Download REST JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar"
+          path: artifacts/rest
+
+      - name: Download .deb
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ env.APP_NAME }}-${{ env.VERSION }}.deb"
+          path: artifacts/deb
+
+      - name: Download .msi
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
+          path: artifacts/msi
+
+      - name: Download .exe
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
+          path: artifacts/exe
+
+      - name: Stage REST JAR for release image
+        shell: bash
+        run: |
+          set -euo pipefail
+          REST_JAR=$(find artifacts/rest -maxdepth 1 -name '*.jar' -print -quit)
+          if [ -z "$REST_JAR" ]; then
+            echo "REST jar not found" >&2
+            exit 1
+          fi
+          mkdir -p expresso-rest/target
+          cp "$REST_JAR" expresso-rest/target/
+
+      - name: Build REST Docker image (release copy)
+        run: docker build -f dockerfile -t ${{ env.APP_NAME }}-rest:${{ env.VERSION }} .
+
+      # --- NEW: Push image to Docker Hub when creds are present ---
+      - name: Docker Hub login
+        if: needs.build-jar.outputs.dockerhub_available == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push REST image to Docker Hub
+        if: needs.build-jar.outputs.dockerhub_available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOCAL="${APP_NAME}-rest:${VERSION}"
+          REPO="${{ secrets.DOCKERHUB_USERNAME }}/${APP_NAME}-rest"
+          SHORT_SHA="${GITHUB_SHA::7}"
+
+          docker tag "$LOCAL" "$REPO:${VERSION}"
+          docker tag "$LOCAL" "$REPO:latest"
+          docker tag "$LOCAL" "$REPO:${SHORT_SHA}"
+
+          docker push "$REPO:${VERSION}"
+          docker push "$REPO:latest"
+          docker push "$REPO:${SHORT_SHA}"
+      # --- END NEW ---
+
+      - name: Create GitHub Release + upload assets
+        id: gh_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ env.VERSION }}"
+          target_commitish: ${{ github.sha }}
+          name: "${{ env.APP_NAME }} v${{ env.VERSION }}"
+          generate_release_notes: true
+          files: |
+            artifacts/cli/*.jar
+            artifacts/deb/*.deb
+            artifacts/msi/*.msi
+            artifacts/exe/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Discord notify (success)
+        if: ${{ success() }}
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            ✅ **Release created**
+            • App: **${{ env.APP_NAME }}** v${{ env.VERSION }}
+            • Tag: `${{ github.ref_name }}`
+            • Author: ${{ github.actor }}
+            • Commit: `${{ github.sha }}`
+            • Release: ${{ steps.gh_release.outputs.html_url }}
+            • Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Discord notify (failure)
+        if: ${{ failure() }}
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            ❌ **Release failed**
+            • App: **${{ env.APP_NAME }}** v${{ env.VERSION }}
+            • Ref: `${{ github.ref_name }}`
+            • Author: ${{ github.actor }}
+            • Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Delete uploaded artifacts
+        if: ${{ success() }}
+        uses: geekyeggo/delete-artifact@v4
+        with:
+          name: |
+            ${{ env.APP_NAME }}-${{ env.VERSION }}.jar
+            ${{ env.APP_NAME }}-${{ env.VERSION }}.deb
+            ${{ env.APP_NAME }}-${{ env.VERSION }}.msi
+            ${{ env.APP_NAME }}-${{ env.VERSION }}.exe
+            ${{ env.APP_NAME }}-${{ env.VERSION }}-rest.jar
