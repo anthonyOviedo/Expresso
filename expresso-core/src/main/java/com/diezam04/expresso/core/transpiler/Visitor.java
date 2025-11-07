@@ -1,3 +1,9 @@
+// ----------------------------------------------------------------------------------------------------
+//          Authors: 
+//          Antony Oviedo Alfaro ID: 207640246
+//          Esteban Francisco Sánchez Sánchez  ID: 402640418
+// ----------------------------------------------------------------------------------------------------
+
 package com.diezam04.expresso.core.transpiler;
 
 import java.util.ArrayDeque;
