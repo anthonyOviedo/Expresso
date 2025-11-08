@@ -8,6 +8,7 @@ package com.diezam04.expresso.core.transpiler;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -354,17 +355,20 @@ public final class Visitor {
 
     private static String renderMatch(Match match, GenerationContext context) {
         String javaType = inferMatchJavaType(match, context);
-        String valueVar = context.reserveLetName("matchValue");
+        String targetExpr = genExpr(match.target(), context);
         StringBuilder builder = new StringBuilder();
-        builder.append("(new Object() {\n");
-        builder.append("            ").append(javaType).append(" run() {\n");
-        builder.append("                var ").append(valueVar).append(" = ").append(genExpr(match.target(), context)).append(";\n");
+        builder.append("((").append(javaType).append(") (switch (").append(targetExpr).append(") {\n");
+        boolean hasWildcard = false;
         for (MatchCase matchCase : match.cases()) {
-            builder.append(renderMatchCase(matchCase, valueVar, context));
+            if (matchCase.pattern() instanceof WildcardPattern) {
+                hasWildcard = true;
+            }
+            builder.append(renderMatchCase(matchCase, context));
         }
-        builder.append("                throw new IllegalStateException(\"Non-exhaustive match\");\n");
-        builder.append("            }\n");
-        builder.append("        }).run()");
+        if (!hasWildcard) {
+            builder.append("                default -> throw new IllegalStateException(\"Non-exhaustive match\");\n");
+        }
+        builder.append("            }))");
         return builder.toString();
     }
 
@@ -411,16 +415,20 @@ public final class Visitor {
                 }
             }
         }
+        ValueType inferred = inferOperationType(op, Collections.emptyMap(), context);
+        if (inferred != null) {
+            return inferred.javaName();
+        }
         return "Object";
     }
 
-    private static String renderMatchCase(MatchCase matchCase, String valueVar, GenerationContext context) {
+    private static String renderMatchCase(MatchCase matchCase, GenerationContext context) {
         StringBuilder builder = new StringBuilder();
         if (matchCase.pattern() instanceof ConstructorPattern pattern) {
             GenerationContext.DataConstructorInfo ctorInfo = context.lookupConstructor(pattern.constructorName());
             String javaCtor = ctorInfo == null ? capitalize(pattern.constructorName()) : ctorInfo.javaName();
             String alias = context.reserveLetName(pattern.constructorName() + "Case");
-            builder.append("                if (").append(valueVar).append(" instanceof ").append(javaCtor).append(" ").append(alias).append(") {\n");
+            builder.append("                case ").append(javaCtor).append(" ").append(alias).append(" -> {\n");
             context.pushScope();
             List<String> sanitized = context.registerPatternBindings(pattern.bindings());
             List<GenerationContext.DataFieldInfo> fields = ctorInfo == null ? List.of() : ctorInfo.fields();
@@ -440,12 +448,12 @@ public final class Visitor {
             }
             String body = genExpr(matchCase.body(), context);
             context.popScope();
-            builder.append("                    return ").append(body).append(";\n");
+            builder.append("                    yield ").append(body).append(";\n");
             builder.append("                }\n");
         } else if (matchCase.pattern() instanceof WildcardPattern) {
             String body = genExpr(matchCase.body(), context);
-            builder.append("                {\n");
-            builder.append("                    return ").append(body).append(";\n");
+            builder.append("                default -> {\n");
+            builder.append("                    yield ").append(body).append(";\n");
             builder.append("                }\n");
         }
         return builder.toString();

@@ -10,8 +10,8 @@ prog
     ;
 
 stat
-    : 'fun' ID '(' paramDeclList? ')' ':' type '=' expr comment? # funStat
-    | 'let' ID (':' typeRef)? '=' expr comment?      # letStat
+    : 'fun' ID '(' paramDeclList? ')' ':' typeRef '=' NEWLINE* expr comment? # funStat
+    | 'let' ID (':' typeRef)? '=' NEWLINE* expr comment?      # letStat
     | PRINT expr comment?           # printStat
     | 'data' ID dataBlock comment?    # dataStat
     | expr comment?                   # exprStat
@@ -52,7 +52,7 @@ paramDeclList
     ;
 
 paramDecl
-    : ID ':' type
+    : ID ':' typeRef
     ;
 
 type
@@ -78,7 +78,10 @@ expr
     | expr '?' expr ':' expr          # Ternary
     | params '->' expr                # Lambda
     | expr ':' typeRef                # TypeCast
-    | 'match' expr 'with' matchCase ('|' matchCase)* # matchExpr
+    | 'match' expr (
+        'with' matchCase ('|' matchCase)*
+        | '{' NEWLINE* matchCase (matchCaseSeparator matchCase)* matchCaseSeparator? '}'
+      ) # matchExpr
     | FLOAT_E                         # EulerFloat
     | FLOAT                           # Float
     | INT                             # Int
@@ -88,7 +91,18 @@ expr
     ;
 
 matchCase
-    : pattern '->' expr
+    : ('case')? pattern matchArrow expr
+    | 'default' matchArrow expr
+    ;
+
+matchArrow
+    : '->'
+    | '=>'
+    ;
+
+matchCaseSeparator
+    : NEWLINE+ (',' NEWLINE*)?
+    | ',' NEWLINE*
     ;
 
 pattern
@@ -115,7 +129,7 @@ params
     ;
 
 lambdaParam
-    : ID (':' type)?
+    : ID (':' typeRef)?
     ;
 
 // ---- Lexer ----

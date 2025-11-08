@@ -235,6 +235,9 @@ public final class Ast {
         }
 
         public static ValueType fromLiteral(String literal) {
+            if (literal == null || literal.isBlank()) {
+                return ANY;
+            }
             if ("int".equalsIgnoreCase(literal)) {
                 return INT;
             }
@@ -250,7 +253,7 @@ public final class Ast {
             if ("any".equalsIgnoreCase(literal)) {
                 return ANY;
             }
-            throw new IllegalArgumentException("Unsupported type: " + literal);
+            return ANY;
         }
     }
 

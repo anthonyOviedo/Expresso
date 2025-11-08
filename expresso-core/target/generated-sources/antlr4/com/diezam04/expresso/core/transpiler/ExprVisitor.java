@@ -251,6 +251,18 @@ public interface ExprVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitMatchCase(ExprParser.MatchCaseContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link ExprParser#matchArrow}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMatchArrow(ExprParser.MatchArrowContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ExprParser#matchCaseSeparator}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMatchCaseSeparator(ExprParser.MatchCaseSeparatorContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code wildcardPattern}
 	 * labeled alternative in {@link ExprParser#pattern}.
 	 * @param ctx the parse tree

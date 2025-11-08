@@ -98,15 +98,28 @@ data shape = {
     Rectangle(length:float, width:float)
 }
 
-fun getPerimeter(s:shape):float =
+
+fun shape_type(s:shape):string =
     match s {
-        case Circle(r) => 2 * r * 3.14159
-        case Rectangle(l, w) => 2 * l + 2 * w
-        default => error("Unrecognized shape")
+        case Circle(r) => "its a Circle",
+        case Rectangle(l, w) => "its a Rectangle"
+    }
+
+
+fun area(s:shape):float =
+    match s {
+        case Circle(r) => 2 * r * 3.14,
+        case Rectangle(l, w) => l * w
     }
 
 let c = ^Circle(5.0)
 let r = ^Rectangle(3.0, 4.0)
 
-print(getPerimeter(c))
-print(getPerimeter(r))
+print(c)
+print(r)
+
+print(shape_type(c))
+print(shape_type(r))
+
+print(area(c))
+print(area(r))

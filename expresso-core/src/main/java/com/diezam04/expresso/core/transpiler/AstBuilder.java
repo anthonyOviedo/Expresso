@@ -69,7 +69,7 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
         return new FunStatement(
             ctx.ID().getText(),
             parameters,
-            parseType(ctx.type()),
+            parseValueType(ctx.typeRef()),
             visitOperation(ctx.expr()),
             comment);
     }
@@ -239,12 +239,12 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
     }
 
     private static LambdaParam toLambdaParam(ExprParser.LambdaParamContext ctx) {
-        ValueType type = ctx.type() == null ? null : parseType(ctx.type());
+        ValueType type = ctx.typeRef() == null ? null : parseValueType(ctx.typeRef());
         return new LambdaParam(ctx.ID().getText(), type);
     }
 
     private static Parameter toParameter(ExprParser.ParamDeclContext ctx) {
-        return new Parameter(ctx.ID().getText(), parseType(ctx.type()));
+        return new Parameter(ctx.ID().getText(), parseValueType(ctx.typeRef()));
     }
 
     private static DataConstructor toDataConstructor(ExprParser.DataConstructorContext ctx) {
@@ -263,6 +263,9 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
     }
 
     private MatchCase toMatchCase(ExprParser.MatchCaseContext ctx) {
+        if (ctx.pattern() == null) {
+            return new MatchCase(new WildcardPattern(), visitOperation(ctx.expr()));
+        }
         return new MatchCase(toPattern(ctx.pattern()), visitOperation(ctx.expr()));
     }
 
@@ -346,10 +349,6 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
         String fieldType() {
             return fieldType;
         }
-    }
-
-    private static ValueType parseType(ExprParser.TypeContext ctx) {
-        return ValueType.fromLiteral(ctx.getText());
     }
 
     private static ValueType parseValueType(ExprParser.TypeRefContext ctx) {

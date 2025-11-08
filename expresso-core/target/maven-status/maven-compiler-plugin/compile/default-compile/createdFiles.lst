@@ -72,6 +72,7 @@ com/diezam04/expresso/core/transpiler/ExprParser$EqualityContext.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast$Call.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast$ConstructorPattern.class
 com/diezam04/expresso/core/transpiler/ExprParser$MatchExprContext.class
+com/diezam04/expresso/core/transpiler/ExprParser$MatchArrowContext.class
 com/diezam04/expresso/core/transpiler/Visitor.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast$Num.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast$FunStatement.class
@@ -102,3 +103,4 @@ com/diezam04/expresso/core/transpiler/src/ast/Ast$DataConstructor.class
 com/diezam04/expresso/core/transpiler/ExprParser$DataBlockContext.class
 com/diezam04/expresso/core/transpiler/Visitor$FunctionalInterfaceDescriptor.class
 com/diezam04/expresso/core/Transpiler.class
+com/diezam04/expresso/core/transpiler/ExprParser$MatchCaseSeparatorContext.class

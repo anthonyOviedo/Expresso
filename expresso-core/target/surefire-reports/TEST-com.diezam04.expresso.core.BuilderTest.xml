@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.diezam04.expresso.core.BuilderTest" time="0.043" tests="1" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.diezam04.expresso.core.BuilderTest" time="0.037" tests="1" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="24"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -13,7 +13,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="/usr/lib/jvm/openjdk-24/jdk-24.0.2/lib"/>
-    <property name="sun.java.command" value="/home/tony/proyectos/Expresso/expresso-core/target/surefire/surefirebooter-20251108133656266_3.jar /home/tony/proyectos/Expresso/expresso-core/target/surefire 2025-11-08T13-36-56_188-jvmRun1 surefire-20251108133656266_1tmp surefire_0-20251108133656266_2tmp"/>
+    <property name="sun.java.command" value="/home/tony/proyectos/Expresso/expresso-core/target/surefire/surefirebooter-20251108142358505_3.jar /home/tony/proyectos/Expresso/expresso-core/target/surefire 2025-11-08T14-23-58_439-jvmRun1 surefire-20251108142358505_1tmp surefire_0-20251108142358505_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/home/tony/proyectos/Expresso/expresso-core/target/test-classes:/home/tony/proyectos/Expresso/expresso-core/target/classes:/home/tony/.m2/repository/org/antlr/antlr4-runtime/4.13.1/antlr4-runtime-4.13.1.jar:/home/tony/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.3/junit-jupiter-5.10.3.jar:/home/tony/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.3/junit-jupiter-api-5.10.3.jar:/home/tony/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/tony/.m2/repository/org/junit/platform/junit-platform-commons/1.10.3/junit-platform-commons-1.10.3.jar:/home/tony/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/tony/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.3/junit-jupiter-params-5.10.3.jar:/home/tony/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.3/junit-jupiter-engine-5.10.3.jar:/home/tony/.m2/repository/org/junit/platform/junit-platform-engine/1.10.3/junit-platform-engine-1.10.3.jar:"/>
     <property name="sun.cpu.endian" value="little"/>
@@ -28,7 +28,7 @@
     <property name="line.separator" value="&#10;"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
-    <property name="surefire.real.class.path" value="/home/tony/proyectos/Expresso/expresso-core/target/surefire/surefirebooter-20251108133656266_3.jar"/>
+    <property name="surefire.real.class.path" value="/home/tony/proyectos/Expresso/expresso-core/target/surefire/surefirebooter-20251108142358505_3.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="24.0.2+12-54"/>
     <property name="user.name" value="tony"/>
@@ -54,5 +54,5 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="68.0"/>
   </properties>
-  <testcase name="buildProducesValidClassFileAfterTranspile" classname="com.diezam04.expresso.core.BuilderTest" time="0.042"/>
+  <testcase name="buildProducesValidClassFileAfterTranspile" classname="com.diezam04.expresso.core.BuilderTest" time="0.035"/>
 </testsuite>

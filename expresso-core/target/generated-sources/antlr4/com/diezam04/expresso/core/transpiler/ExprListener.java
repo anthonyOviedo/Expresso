@@ -416,6 +416,26 @@ public interface ExprListener extends ParseTreeListener {
 	 */
 	void exitMatchCase(ExprParser.MatchCaseContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link ExprParser#matchArrow}.
+	 * @param ctx the parse tree
+	 */
+	void enterMatchArrow(ExprParser.MatchArrowContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#matchArrow}.
+	 * @param ctx the parse tree
+	 */
+	void exitMatchArrow(ExprParser.MatchArrowContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ExprParser#matchCaseSeparator}.
+	 * @param ctx the parse tree
+	 */
+	void enterMatchCaseSeparator(ExprParser.MatchCaseSeparatorContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#matchCaseSeparator}.
+	 * @param ctx the parse tree
+	 */
+	void exitMatchCaseSeparator(ExprParser.MatchCaseSeparatorContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code wildcardPattern}
 	 * labeled alternative in {@link ExprParser#pattern}.
 	 * @param ctx the parse tree
