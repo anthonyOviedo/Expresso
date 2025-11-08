@@ -1,0 +1,15 @@
+/////////////// TC5 //////////////////
+
+/*
+
+Se prueban los requerimientos mínimos:
+a. El typer detecta posibles identificadores no definidos .
+b. El typer detecta posibles identificadores redefinidos .
+c. El typer genera el archivo de todos los tipos recolectados en el archivo .typings .
+  
+*/
+
+
+fun fill(n:int, s:string):string = n == 0 ? "" : ( s + fill(n - 1, s) )
+
+print(fill(234, "b"))

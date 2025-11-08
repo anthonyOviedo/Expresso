@@ -1,14 +1,78 @@
 /*
+Se soporta todo lo pedido en sprints anteriores.Incluyendo el comando expressor de
+consola del spec original.
+*/
+print("*********************** HelloWorld0 ***********************")
+let x = 666
+print(x)
+let y = 10
+print(y)
 
-  Repeats a string n-times using a recursive two-parameters fun
-  Uses == as lambda
-  Potential Issue two-parameters type
-  
-  Define a Lambda (recognize type Function<Integer, String> and generate .apply)
-  
+print("*********************** HelloWorld1 ***********************")
+let x = 6
+print(x)
+let y = 3
+print(y)
+let f = (x, z) -> z ** x + x*z + 1
+print(f(x, y)) // Expected 748
+
+print("*********************** HelloWorld2 ***********************")
+let isZero = x -> x ? 0 : 1
+let TRUE  = 1
+let FALSE = 0
+let isTrue = x -> isZero(x) ? TRUE : FALSE
+let NOT = x -> x ? 0 : 1
+let OR =  (x, y) -> isTrue(x) ? TRUE : isTrue(y)
+let AND = (x, y) -> isTrue(x) ? isTrue(y) : FALSE
+let XOR = (x, y) -> AND(OR(x, y), NOT(AND(x, y)))
+print(XOR(TRUE, TRUE))   // Expected 0
+print(XOR(TRUE, FALSE))  // Expected 1
+print(XOR(FALSE, TRUE))  // Expected 1
+print(XOR(FALSE, FALSE)) // Expected 0
+
+
+/*
+Se soportan tipos Object ( any en Expresso ), flotantes ( float ) booleanos
+( boolean ) e hileras (estilo Java con " ). ( string ). Para tipo de usuario, se
+soportan declaraciones data que crean tipos de usuario, según se explica adelante.
+*/
+
+/*
+Está disponible la declaración fun para lambdas como métodos. Es una declaración
+estatuto como un let pero permite una definición recursiva. Ejemplo:
+*/
+fun fill(n:int, s:string):string = n == 0 ? "" : ( s + fill(n - 1, s) )
+print(fill(10, "-"))
+
+
+
+let abs = x:float -> x >= 0 ? x : -x // Uses >= and unary -
+print("Test abs:" + (abs(-666) == abs(--666)) )
+
+let a =  1e // Fully uppercased id. Issue floating-point using scientific notation
+print("a="  + a)
+
+let improve = (a:float, x:float) -> 0.5 * (x + a / x) 
+print("Test improve:" + (improve(1,1)) )
+
+
+/*
+Hay tipos explícitos. Una expressión se anota con su tipo usando el operador : . Si no
+se declara se asume any en esta versión; o en casos como un let se infiere del tipo
+del lado derecho. Por ejemplo:
 */
 
 
-fun fill(n:int, s:string):string = n == 0 ? "" : ( s + fill(n - 1, s) )
+let PI:float = 3.14
+let x = 666 // lo mismo que let x:int = 666
+fun cat(s:string t:string):string = s + t
+let my_pow:((float, int) -> float) = (x, n) -> x ** n
+let another_my_pow = (x:float, n:float) -> x ** n
 
-print(fill(234, "b"))
+
+/*
+Hay declaraciones data para datatypes, como se mencionó ya en el spec de arranque.
+Son sintácticamente estatutos como el let . Recuerde que se transpilan como
+sealed interfaces y permits con record para las implementaciones (ver spec
+original del proyecto). Ejemplos:
+*/

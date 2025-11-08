@@ -27,6 +27,7 @@ paramDecl
 
 type
     : 'int'
+    | 'float'
     | 'string'
     ;
 
@@ -41,9 +42,12 @@ expr
     | expr '(' argumentList? ')'      # Call
     | expr op=('*'|'/') expr          # MulDiv
     | expr op=('+'|'-') expr          # AddSub
+    | expr op=('>='|'<='|'>'|'<') expr # Relation
     | expr op=('=='|'!=') expr        # Equality
     | expr '?' expr ':' expr          # Ternary
     | params '->' expr                # Lambda
+    | FLOAT_E                         # EulerFloat
+    | FLOAT                           # Float
     | INT                             # Int
     | STRING                          # StringLit
     | ID                              # IdRef
@@ -55,15 +59,29 @@ argumentList
     ;
 
 params
-    : ID
-    | '(' (ID (',' ID)*)? ')'
+    : lambdaParam
+    | '(' (lambdaParam (',' lambdaParam)*)? ')'
+    ;
+
+lambdaParam
+    : ID (':' type)?
     ;
 
 // ---- Lexer ----
 ID: [a-zA-Z_] [a-zA-Z_0-9]*;
-INT: [0-9]+;
+FLOAT_E
+    : (DIGITS '.' DIGITS* | DIGITS '.' | DIGITS | '.' DIGITS) 'e'
+    ;
+FLOAT
+    : DIGITS '.' DIGITS* EXPONENT?
+    | '.' DIGITS EXPONENT?
+    ;
+INT: DIGITS;
 STRING: '"' ( '\\' [btnr"\\] | ~["\\\r\n] )* '"';
 NEWLINE: ('\r'? '\n');
 WS: [ \t\r]+ -> skip;
 LINE_COMMENT: '//' ~[\r\n]*;
 BLOCK_COMMENT: '/*' .*? '*/';
+
+fragment DIGITS: [0-9]+;
+fragment EXPONENT: [eE] [+\-]? DIGITS;
