@@ -63,6 +63,7 @@ static public Integer writeFile(java.io.File source, String content, String exte
         if ("class".equals(extension)) {
             Path generatedClassPath = Path.of(content);
             Files.copy(generatedClassPath, outFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            copyInnerClasses(generatedClassPath, outFolder.toPath());
             log("Binary file " + outFile.getAbsolutePath() + " created successfully");
         } else {
             try (FileWriter writer = new FileWriter(outFile)) {
@@ -109,6 +110,25 @@ public static File tempFile(String content, String ext) {
         return tmp;
     } catch (IOException e) {
         throw new RuntimeException(e);
+    }
+}
+
+private static void copyInnerClasses(Path mainClassPath, Path targetDir) throws IOException {
+    Path parent = mainClassPath.getParent();
+    if (parent == null) {
+        return;
+    }
+    String mainFileName = mainClassPath.getFileName().toString();
+    if (!mainFileName.endsWith(".class")) {
+        return;
+    }
+    String prefix = mainFileName.substring(0, mainFileName.length() - ".class".length());
+    try (var stream = Files.newDirectoryStream(parent, prefix + "$*.class")) {
+        for (Path companion : stream) {
+            Path target = targetDir.resolve(companion.getFileName().toString());
+            Files.copy(companion, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            log("Binary file " + target.toAbsolutePath() + " created successfully");
+        }
     }
 }
 

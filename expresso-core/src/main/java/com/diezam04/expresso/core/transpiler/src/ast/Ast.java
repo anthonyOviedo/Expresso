@@ -14,9 +14,9 @@ public final class Ast {
 
     public sealed interface Node permits Program, Statement, Operation { }
 
-    public sealed interface Statement extends Node permits LetStatement, PrintStatement, ExprStatement, CommentStatement { }
+    public sealed interface Statement extends Node permits LetStatement, PrintStatement, ExprStatement, CommentStatement, FunStatement { }
 
-    public sealed interface Operation extends Node permits Num, UnaryOper, BinaryOper, Lambda, Call, VarRef, Ternary { }
+    public sealed interface Operation extends Node permits Num, UnaryOper, BinaryOper, Lambda, Call, VarRef, Ternary, Text { }
 
     public static record Num(int value) implements Operation { }
 
@@ -52,6 +52,28 @@ public final class Ast {
         }
     }
 
+    public static record FunStatement(
+            String name,
+            List<Parameter> parameters,
+            ValueType returnType,
+            Operation body,
+            String comment) implements Statement {
+        public FunStatement {
+            Objects.requireNonNull(name);
+            parameters = List.copyOf(Objects.requireNonNull(parameters));
+            Objects.requireNonNull(returnType);
+            Objects.requireNonNull(body);
+            comment = normalizeComment(comment);
+        }
+    }
+
+    public static record Parameter(String name, ValueType type) {
+        public Parameter {
+            Objects.requireNonNull(name);
+            Objects.requireNonNull(type);
+        }
+    }
+
     public static record Oper(String symbol) {
         public Oper { if (symbol == null || symbol.isBlank()) throw new IllegalArgumentException("Operator symbol must not be blank"); }
     }
@@ -81,6 +103,43 @@ public final class Ast {
 
     public static record Ternary(Operation cond, Operation thenExpr, Operation elseExpr) implements Operation {
         public Ternary { Objects.requireNonNull(cond); Objects.requireNonNull(thenExpr); Objects.requireNonNull(elseExpr); }
+    }
+
+    public static record Text(String value) implements Operation {
+        public Text {
+            Objects.requireNonNull(value);
+        }
+    }
+
+    public enum ValueType {
+        INT("int", "Integer"),
+        STRING("String", "String");
+
+        private final String javaRepresentation;
+        private final String boxedRepresentation;
+
+        ValueType(String javaRepresentation, String boxedRepresentation) {
+            this.javaRepresentation = javaRepresentation;
+            this.boxedRepresentation = boxedRepresentation;
+        }
+
+        public String javaName() {
+            return javaRepresentation;
+        }
+
+        public String boxedJavaName() {
+            return boxedRepresentation;
+        }
+
+        public static ValueType fromLiteral(String literal) {
+            if ("int".equalsIgnoreCase(literal)) {
+                return INT;
+            }
+            if ("string".equalsIgnoreCase(literal)) {
+                return STRING;
+            }
+            throw new IllegalArgumentException("Unsupported type: " + literal);
+        }
     }
 
     private static String normalizeComment(String comment) {

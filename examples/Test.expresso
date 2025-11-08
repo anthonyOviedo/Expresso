@@ -1,0 +1,14 @@
+/*
+
+  Repeats a string n-times using a recursive two-parameters fun
+  Uses == as lambda
+  Potential Issue two-parameters type
+  
+  Define a Lambda (recognize type Function<Integer, String> and generate .apply)
+  
+*/
+
+
+fun fill(n:int, s:string):string = n == 0 ? "" : ( s + fill(n - 1, s) )
+
+print(fill(234, "b"))

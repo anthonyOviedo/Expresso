@@ -44,6 +44,8 @@
               <listener>false</listener>
               <visitor>true</visitor>
               <arguments>
+                <argument>-visitor</argument>
+                <argument>-no-listener</argument>
                 <argument>-package</argument>
                 <argument>com.diezam04.expresso.core.transpiler</argument>
               </arguments>

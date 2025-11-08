@@ -21,15 +21,19 @@ import com.diezam04.expresso.core.transpiler.src.ast.Ast.BinaryOper;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Call;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.CommentStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.ExprStatement;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.FunStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Lambda;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.LetStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Num;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Operation;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.Parameter;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.PrintStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Program;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Statement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Ternary;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.Text;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.UnaryOper;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.ValueType;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.VarRef;
 
 public final class Visitor {
@@ -81,6 +85,9 @@ public final class Visitor {
             context.registerLet(letStatement.name(), sanitizedName);
             return List.of(appendInlineComment(base, letStatement.comment()));
         }
+        if (stmt instanceof FunStatement funStatement) {
+            return genFunStatement(funStatement, context);
+        }
         if (stmt instanceof PrintStatement printStatement) {
             String expr = genExpr(printStatement.value(), context);
             String base = "print(" + expr + ");";
@@ -96,9 +103,99 @@ public final class Visitor {
         return List.of();
     }
 
+    private static List<String> genFunStatement(FunStatement funStatement, GenerationContext context) {
+        context.requireFunctionalInterface(funStatement.parameters().size());
+        String sanitizedName = context.reserveLetName(funStatement.name());
+        context.registerLet(funStatement.name(), sanitizedName);
+        String type = renderFunctionalType(funStatement.parameters(), funStatement.returnType());
+        String value = renderRecursiveFunctionValue(funStatement, context);
+        String base = type + " " + sanitizedName + " = " + value + ";";
+        return List.of(appendInlineComment(base, funStatement.comment()));
+    }
+
+    private static String renderFunctionalType(List<Parameter> params, ValueType returnType) {
+        String interfaceName = functionalInterfaceName(params.size());
+        String generics = renderFunctionGenerics(params, returnType);
+        if (generics.isEmpty()) {
+            return interfaceName;
+        }
+        return interfaceName + "<" + generics + ">";
+    }
+
+    private static String renderRecursiveFunctionValue(FunStatement funStatement, GenerationContext context) {
+        int arity = funStatement.parameters().size();
+        String interfaceName = functionalInterfaceName(arity);
+        String generics = renderFunctionGenerics(funStatement.parameters(), funStatement.returnType());
+        String methodName = methodNameForArity(arity);
+
+        List<String> originalParams = funStatement.parameters().stream()
+            .map(Parameter::name)
+            .collect(Collectors.toList());
+
+        context.pushScope();
+        List<String> sanitizedParams = context.registerLambdaParams(originalParams);
+        context.pushAlias(funStatement.name(), "this");
+        String body = genExpr(funStatement.body(), context);
+        context.popAlias(funStatement.name());
+        context.popScope();
+
+        List<String> signatureParts = new ArrayList<>();
+        for (int i = 0; i < sanitizedParams.size(); i++) {
+            String type = boxedType(funStatement.parameters().get(i).type());
+            signatureParts.add(type + " " + sanitizedParams.get(i));
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("new ").append(interfaceName);
+        if (!generics.isEmpty()) {
+            builder.append("<").append(generics).append(">");
+        }
+        builder.append("() {\n");
+        builder.append("            @Override public ")
+            .append(boxedType(funStatement.returnType()))
+            .append(" ")
+            .append(methodName)
+            .append("(")
+            .append(String.join(", ", signatureParts))
+            .append(") {\n");
+        builder.append("                return ").append(body).append(";\n");
+        builder.append("            }\n");
+        builder.append("        }");
+        return builder.toString();
+    }
+
+    private static String renderFunctionGenerics(List<Parameter> params, ValueType returnType) {
+        List<String> types = new ArrayList<>(params.size() + 1);
+        for (Parameter param : params) {
+            types.add(boxedType(param.type()));
+        }
+        types.add(boxedType(returnType));
+        return String.join(", ", types);
+    }
+
+    private static String functionalInterfaceName(int arity) {
+        return switch (arity) {
+            case 0 -> "Supplier";
+            case 1 -> "Function";
+            case 2 -> "BiFunction";
+            default -> throw new UnsupportedOperationException("Functional arity " + arity + " not supported");
+        };
+    }
+
+    private static String methodNameForArity(int arity) {
+        return arity == 0 ? "get" : "apply";
+    }
+
+    private static String boxedType(ValueType type) {
+        return type.boxedJavaName();
+    }
+
     private static String genExpr(Operation expr, GenerationContext context) {
         if (expr instanceof Num num) {
             return String.valueOf(num.value());
+        }
+        if (expr instanceof Text text) {
+            return "\"" + escapeJavaString(text.value()) + "\"";
         }
         if (expr instanceof VarRef var) {
             return context.resolveName(var.name());
@@ -175,6 +272,9 @@ public final class Visitor {
         if (rhs instanceof Num) {
             return "int";
         }
+        if (rhs instanceof Text) {
+            return "String";
+        }
         if (rhs instanceof Lambda lambda) {
             int arity = lambda.params().size();
             context.requireFunctionalInterface(arity);
@@ -192,6 +292,7 @@ public final class Visitor {
         private final Set<String> imports = new LinkedHashSet<>();
         private final Deque<Scope> scopes = new ArrayDeque<>();
         private final Set<String> reservedNames = new HashSet<>();
+        private final Map<String, Deque<String>> aliasOverrides = new HashMap<>();
 
         GenerationContext() {
             scopes.push(new Scope());
@@ -241,6 +342,18 @@ public final class Visitor {
             scopes.pop();
         }
 
+        void pushAlias(String original, String alias) {
+            aliasOverrides.computeIfAbsent(original, key -> new ArrayDeque<>()).push(alias);
+        }
+
+        void popAlias(String original) {
+            Deque<String> aliases = aliasOverrides.get(original);
+            if (aliases == null || aliases.isEmpty()) {
+                return;
+            }
+            aliases.pop();
+        }
+
         List<String> registerLambdaParams(List<String> params) {
             Scope scope = scopes.peek();
             List<String> sanitized = new ArrayList<>(params.size());
@@ -253,6 +366,10 @@ public final class Visitor {
         }
 
         String resolveName(String original) {
+            Deque<String> aliases = aliasOverrides.get(original);
+            if (aliases != null && !aliases.isEmpty()) {
+                return aliases.peek();
+            }
             for (Scope scope : scopes) {
                 String mapped = scope.get(original);
                 if (mapped != null) {
@@ -300,6 +417,29 @@ public final class Visitor {
                 return sanitizedNames.contains(name);
             }
         }
+    }
+
+    private static String escapeJavaString(String raw) {
+        StringBuilder sb = new StringBuilder();
+        for (char ch : raw.toCharArray()) {
+            switch (ch) {
+                case '\\' -> sb.append("\\\\");
+                case '"' -> sb.append("\\\"");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                case '\b' -> sb.append("\\b");
+                case '\f' -> sb.append("\\f");
+                default -> {
+                    if (ch < 32 || ch > 126) {
+                        sb.append(String.format("\\u%04x", (int) ch));
+                    } else {
+                        sb.append(ch);
+                    }
+                }
+            }
+        }
+        return sb.toString();
     }
 
     private static String appendInlineComment(String base, String comment) {
@@ -354,6 +494,13 @@ public final class Visitor {
                 Operation value = optimizeOperation(let.value(), new LambdaContext(null));
                 return new LetStatement(let.name(), value, let.comment());
             }
+            if (stmt instanceof FunStatement fun) {
+                List<String> params = fun.parameters().stream()
+                    .map(Parameter::name)
+                    .collect(Collectors.toList());
+                Operation body = optimizeOperation(fun.body(), new LambdaContext(params));
+                return new FunStatement(fun.name(), fun.parameters(), fun.returnType(), body, fun.comment());
+            }
             if (stmt instanceof PrintStatement print) {
                 Operation value = optimizeOperation(print.value(), lambdaCtx);
                 return new PrintStatement(value, print.comment());
@@ -366,7 +513,7 @@ public final class Visitor {
         }
 
         private Operation optimizeOperation(Operation op, LambdaContext lambdaCtx) {
-            if (op instanceof Num || op instanceof VarRef) {
+            if (op instanceof Num || op instanceof VarRef || op instanceof Text) {
                 return op;
             }
             if (op instanceof UnaryOper unary) {
