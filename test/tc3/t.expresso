@@ -8,11 +8,19 @@ Prueban que los data se transpilan correctamente a Java y que se pueden instanci
 */
 
 
-let abs = x:float -> x >= 0 ? x : -x // Uses >= and unary -
-//  Potential issue: type is UnaryOperator<Double> and method is apply
-print("Test abs:" + (abs(-666) == abs(--666)) )
+// Números naturales
+data nat = {
+Zero,
+S(n:nat)
+}
 
-let EPSILON =  1e-11 // Fully uppercased id. Issue floating-point using scientific notation
-print("EPSILON="  + EPSILON)
+// Listas tipo Scheme/Prolog
+data list = {
+Nil,
+Cons(car:any, cdr:list)
+}
 
-let improve = (a:float, x:float) -> 0.5 * (x + a / x) // BinaryOperator<Double> .apply
+// Simulando un enum
+data gender = {
+Male, Female
+}

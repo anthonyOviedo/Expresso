@@ -46,6 +46,7 @@
           <arguments>
             <argument>-package</argument>
             <argument>com.diezam04.expresso.core.transpiler</argument>
+            <argument>-visitor</argument>
           </arguments>
           <outputDirectory>${project.build.directory}/generated-sources/antlr4</outputDirectory>
         </configuration>
