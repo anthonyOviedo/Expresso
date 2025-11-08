@@ -1,0 +1,13 @@
+/////////////// TC1 //////////////////
+
+/*
+
+Prueban uso de nuevos tipos y operaciones primitivas con y entre ellos. Se prueban con
+funciones incluyendo fun y recursividad.
+  
+*/
+
+
+fun fill(n:int, s:string):string = n == 0 ? "" : ( s + fill(n - 1, s) )
+
+print(fill(234, "b"))

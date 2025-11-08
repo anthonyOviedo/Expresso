@@ -1,0 +1,13 @@
+/////////////// TC4 //////////////////
+
+/*
+
+Prueban que match se transpila correctamente a Java y funciona correctamente en
+conjunción con data y ^ .
+  
+*/
+
+
+fun fill(n:int, s:string):string = n == 0 ? "" : ( s + fill(n - 1, s) )
+
+print(fill(234, "b"))

@@ -11,14 +11,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNode;
-
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.BinaryOper;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Call;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.CommentStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.ExprStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.FunStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Lambda;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.LambdaParam;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.LetStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Num;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Oper;
@@ -32,6 +31,7 @@ import com.diezam04.expresso.core.transpiler.src.ast.Ast.Text;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.UnaryOper;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.ValueType;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.VarRef;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.Real;
 
 public final class AstBuilder extends ExprBaseVisitor<Object> {
 
@@ -98,6 +98,16 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitEulerFloat(ExprParser.EulerFloatContext ctx) {
+        return new Real(parseEulerLiteral(ctx.FLOAT_E().getText()));
+    }
+
+    @Override
+    public Object visitFloat(ExprParser.FloatContext ctx) {
+        return new Real(Double.parseDouble(ctx.FLOAT().getText()));
+    }
+
+    @Override
     public Object visitStringLit(ExprParser.StringLitContext ctx) {
         return new Text(decodeString(ctx.STRING().getText()));
     }
@@ -109,6 +119,11 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
 
     @Override
     public Object visitAddSub(ExprParser.AddSubContext ctx) {
+        return new BinaryOper(new Oper(ctx.op.getText()), visitOperation(ctx.expr(0)), visitOperation(ctx.expr(1)));
+    }
+
+    @Override
+    public Object visitRelation(ExprParser.RelationContext ctx) {
         return new BinaryOper(new Oper(ctx.op.getText()), visitOperation(ctx.expr(0)), visitOperation(ctx.expr(1)));
     }
 
@@ -134,7 +149,7 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
 
     @Override
     public Object visitLambda(ExprParser.LambdaContext ctx) {
-        List<String> params = extractParams(ctx.params());
+        List<LambdaParam> params = extractLambdaParams(ctx.params());
         Operation body = visitOperation(ctx.expr());
         return new Lambda(params, body);
     }
@@ -164,14 +179,19 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
         return (Operation) visit(tree);
     }
 
-    private static List<String> extractParams(ExprParser.ParamsContext ctx) {
-        List<String> params = new ArrayList<>();
+    private static List<LambdaParam> extractLambdaParams(ExprParser.ParamsContext ctx) {
+        List<LambdaParam> params = new ArrayList<>();
         if (ctx != null) {
-            for (TerminalNode id : ctx.ID()) {
-                params.add(id.getText());
+            for (ExprParser.LambdaParamContext paramCtx : ctx.lambdaParam()) {
+                params.add(toLambdaParam(paramCtx));
             }
         }
         return params;
+    }
+
+    private static LambdaParam toLambdaParam(ExprParser.LambdaParamContext ctx) {
+        ValueType type = ctx.type() == null ? null : parseType(ctx.type());
+        return new LambdaParam(ctx.ID().getText(), type);
     }
 
     private static Parameter toParameter(ExprParser.ParamDeclContext ctx) {
@@ -180,6 +200,14 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
 
     private static ValueType parseType(ExprParser.TypeContext ctx) {
         return ValueType.fromLiteral(ctx.getText());
+    }
+
+    private static double parseEulerLiteral(String literal) {
+        String base = literal.substring(0, literal.length() - 1); // strip trailing 'e'
+        if (base.endsWith(".")) {
+            base = base + "0";
+        }
+        return Double.parseDouble(base) * Math.E;
     }
 
     private static String decodeString(String literal) {

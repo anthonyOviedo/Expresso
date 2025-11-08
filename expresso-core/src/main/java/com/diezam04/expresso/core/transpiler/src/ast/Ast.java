@@ -16,9 +16,10 @@ public final class Ast {
 
     public sealed interface Statement extends Node permits LetStatement, PrintStatement, ExprStatement, CommentStatement, FunStatement { }
 
-    public sealed interface Operation extends Node permits Num, UnaryOper, BinaryOper, Lambda, Call, VarRef, Ternary, Text { }
+    public sealed interface Operation extends Node permits Num, Real, UnaryOper, BinaryOper, Lambda, Call, VarRef, Ternary, Text { }
 
     public static record Num(int value) implements Operation { }
+    public static record Real(double value) implements Operation { }
 
     public static record Program(List<Statement> statements) implements Node {
         public Program { statements = List.copyOf(Objects.requireNonNull(statements)); }
@@ -86,8 +87,17 @@ public final class Ast {
         public BinaryOper { Objects.requireNonNull(operator); Objects.requireNonNull(left); Objects.requireNonNull(right); }
     }
 
-    public static record Lambda(List<String> params, Operation body) implements Operation {
-        public Lambda { Objects.requireNonNull(params); Objects.requireNonNull(body); }
+    public static record Lambda(List<LambdaParam> params, Operation body) implements Operation {
+        public Lambda {
+            params = List.copyOf(Objects.requireNonNull(params));
+            Objects.requireNonNull(body);
+        }
+    }
+
+    public static record LambdaParam(String name, ValueType type) {
+        public LambdaParam {
+            Objects.requireNonNull(name);
+        }
     }
 
     public static record Call(Operation callee, List<Operation> arguments) implements Operation {
@@ -113,7 +123,9 @@ public final class Ast {
 
     public enum ValueType {
         INT("int", "Integer"),
-        STRING("String", "String");
+        FLOAT("double", "Double"),
+        STRING("String", "String"),
+        BOOLEAN("boolean", "Boolean");
 
         private final String javaRepresentation;
         private final String boxedRepresentation;
@@ -131,9 +143,32 @@ public final class Ast {
             return boxedRepresentation;
         }
 
+        public boolean isNumeric() {
+            return this == INT || this == FLOAT;
+        }
+
+        public static ValueType promoteNumeric(ValueType left, ValueType right) {
+            if (left == null) {
+                return right;
+            }
+            if (right == null) {
+                return left;
+            }
+            if (left == FLOAT || right == FLOAT) {
+                return FLOAT;
+            }
+            if (left == INT && right == INT) {
+                return INT;
+            }
+            return null;
+        }
+
         public static ValueType fromLiteral(String literal) {
             if ("int".equalsIgnoreCase(literal)) {
                 return INT;
+            }
+            if ("float".equalsIgnoreCase(literal)) {
+                return FLOAT;
             }
             if ("string".equalsIgnoreCase(literal)) {
                 return STRING;
