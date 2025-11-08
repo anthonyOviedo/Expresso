@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Expresso Web UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Expresso Web UI</h1>
+    <span id="status" class="status">Ready</span>
+    <button id="btnTheme">Toggle Theme</button>
+  </header>
+
+  <main>
+    <div class="panel">
+      <header>Editor</header>
+      <textarea id="editor">
+// HelloWorld1.expresso
+
+/*
+  As HelloWorld0 but with a Binary Function
+  @author hooNous
+  @since Oct 6th, 2025
+*/
+
+let x = 6
+print(x)
+let y = 3
+print(y)
+let f = (x, z) -> z ** x + x*z + 1
+print(f(x, y)) // Expected 748
+      </textarea>
+      <div class="toolbar">
+        <button id="btnTranspile">Transpile</button>
+        <button id="btnBuild">Build</button>
+        <button id="btnRun">Run</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <header>Output</header>
+        <textarea id="output" readonly></textarea>
+      <div class="toolbar">
+        <button id="btnCopyOutput">Copy</button>
+        <button id="btnClearOutput" class="secondary">Clear</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="index.js"></script>
+</body>
+</html>
