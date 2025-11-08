@@ -1,10 +1,11 @@
-/////////////// TC2 //////////////////
-
+print( " ******************** TC2 ******************** " )
 /*
 
 Declaraciones explicitas y Castings.
   
 */
 
-let foo:int = 1 // Identificador "Int" no definido
-Print("666.66":int)
+let foo:int = 1 // should create a int foo = 1;
+print (foo:string + ".000") // should output 1.000 
+Print("7+1":int) //should output 8
+Print("3/2":float) //should output 1.5

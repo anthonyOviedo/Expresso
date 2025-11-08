@@ -231,6 +231,13 @@ public interface ExprVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitEquality(ExprParser.EqualityContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code TypeCast}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeCast(ExprParser.TypeCastContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code Lambda}
 	 * labeled alternative in {@link ExprParser#expr}.
 	 * @param ctx the parse tree

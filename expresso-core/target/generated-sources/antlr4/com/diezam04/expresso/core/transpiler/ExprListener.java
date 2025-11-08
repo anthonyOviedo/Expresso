@@ -382,6 +382,18 @@ public interface ExprListener extends ParseTreeListener {
 	 */
 	void exitEquality(ExprParser.EqualityContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code TypeCast}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeCast(ExprParser.TypeCastContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code TypeCast}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeCast(ExprParser.TypeCastContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code Lambda}
 	 * labeled alternative in {@link ExprParser#expr}.
 	 * @param ctx the parse tree

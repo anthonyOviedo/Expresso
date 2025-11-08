@@ -77,8 +77,9 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
     @Override
     public Object visitLetStat(ExprParser.LetStatContext ctx) {
         Operation value = visitOperation(ctx.expr());
+        ValueType declaredType = ctx.typeRef() == null ? null : parseValueType(ctx.typeRef());
         String comment = ctx.comment() != null ? ctx.comment().getText() : null;
-        return new LetStatement(ctx.ID().getText(), value, comment);
+        return new LetStatement(ctx.ID().getText(), declaredType, value, comment);
     }
 
     @Override
@@ -216,6 +217,13 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
         return new Match(target, cases);
     }
 
+    @Override
+    public Object visitTypeCast(ExprParser.TypeCastContext ctx) {
+        Operation value = visitOperation(ctx.expr());
+        ValueType targetType = parseValueType(ctx.typeRef());
+        return new com.diezam04.expresso.core.transpiler.src.ast.Ast.TypeCast(value, targetType);
+    }
+
     private Operation visitOperation(ParseTree tree) {
         return (Operation) visit(tree);
     }
@@ -341,6 +349,10 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
     }
 
     private static ValueType parseType(ExprParser.TypeContext ctx) {
+        return ValueType.fromLiteral(ctx.getText());
+    }
+
+    private static ValueType parseValueType(ExprParser.TypeRefContext ctx) {
         return ValueType.fromLiteral(ctx.getText());
     }
 

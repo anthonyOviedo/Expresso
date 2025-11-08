@@ -50,7 +50,9 @@ com/diezam04/expresso/core/transpiler/ExprParser$PatternContext.class
 com/diezam04/expresso/core/transpiler/ExprParser$TernaryContext.class
 com/diezam04/expresso/core/transpiler/ExprBaseListener.class
 com/diezam04/expresso/core/transpiler/AstBuilder$ConstructorSpec.class
+com/diezam04/expresso/core/transpiler/ExprParser$TypeCastContext.class
 com/diezam04/expresso/core/transpiler/ExprParser$WildcardPatternContext.class
+com/diezam04/expresso/core/transpiler/Visitor$LiteralExpressionParser.class
 com/diezam04/expresso/core/transpiler/ExprParser$CommentContext.class
 com/diezam04/expresso/core/transpiler/Visitor$GenerationContext$DataTypeInfo.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast$Text.class
@@ -62,6 +64,7 @@ com/diezam04/expresso/core/transpiler/Visitor$AstOptimizer$LambdaContext.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast$Statement.class
 com/diezam04/expresso/core/transpiler/ExprParser$PatternParamListContext.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast.class
+com/diezam04/expresso/core/transpiler/Visitor$1.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast$ValueType.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast$PrintStatement.class
 com/diezam04/expresso/core/transpiler/ExprParser$LetStatContext.class
@@ -91,6 +94,7 @@ com/diezam04/expresso/core/transpiler/src/ast/Ast$Real.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast$DataField.class
 com/diezam04/expresso/core/transpiler/ExprParser$ParamsContext.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast$DataConstructorCall.class
+com/diezam04/expresso/core/transpiler/src/ast/Ast$TypeCast.class
 com/diezam04/expresso/core/transpiler/src/ast/Ast$CommentStatement.class
 com/diezam04/expresso/core/Utils.class
 com/diezam04/expresso/core/transpiler/ExprParser$PowerContext.class

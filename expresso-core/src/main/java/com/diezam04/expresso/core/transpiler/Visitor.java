@@ -42,6 +42,7 @@ import com.diezam04.expresso.core.transpiler.src.ast.Ast.Program;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Statement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Ternary;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Text;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.TypeCast;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.UnaryOper;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.ValueType;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.VarRef;
@@ -93,6 +94,9 @@ public final class Visitor {
     private static List<String> genStatement(Statement stmt, GenerationContext context) {
         if (stmt instanceof LetStatement letStatement) {
             ResolvedType resolvedType = resolveType(letStatement.value(), context);
+            if (letStatement.declaredType() != null) {
+                resolvedType = ResolvedType.scalar(letStatement.declaredType().javaName(), letStatement.declaredType());
+            }
             String sanitizedName = context.reserveLetName(letStatement.name());
             context.registerLet(letStatement.name(), sanitizedName, resolvedType);
             String base = resolvedType.declaration() + " " + sanitizedName + " = "
@@ -259,6 +263,9 @@ public final class Visitor {
         if (expr instanceof Match match) {
             return renderMatch(match, context);
         }
+        if (expr instanceof com.diezam04.expresso.core.transpiler.src.ast.Ast.TypeCast cast) {
+            return renderCast(cast, context);
+        }
         return "";
     }
 
@@ -301,10 +308,48 @@ public final class Visitor {
             throw new IllegalArgumentException("Unknown constructor: " + call.name());
         }
         String javaCtor = info.javaName();
+        if (info.fields().isEmpty() && "Nil".equalsIgnoreCase(info.originalName())) {
+            return "null";
+        }
         String args = call.arguments().stream()
             .map(arg -> genExpr(arg, context))
             .collect(Collectors.joining(", "));
         return "new " + javaCtor + "(" + args + ")";
+    }
+
+    private static String renderCast(TypeCast cast, GenerationContext context) {
+        ValueType targetType = cast.targetType();
+        String value = genExpr(cast.value(), context);
+        ValueType sourceType = guessValueType(cast.value(), context);
+        return switch (targetType) {
+            case STRING -> "String.valueOf(" + value + ")";
+            case INT, FLOAT -> renderNumericCast(targetType, value, cast.value(), sourceType);
+            case BOOLEAN -> {
+                if (sourceType == ValueType.STRING) {
+                    Double evaluated = evaluateLiteralExpression(cast.value());
+                    if (evaluated != null) {
+                        yield evaluated != 0.0 ? "true" : "false";
+                    }
+                    yield "Boolean.parseBoolean(String.valueOf(" + value + "))";
+                }
+                yield "((" + targetType.javaName() + ") (" + value + "))";
+            }
+            case ANY -> "((" + targetType.javaName() + ") (" + value + "))";
+        };
+    }
+
+    private static String renderNumericCast(ValueType targetType, String valueExpr, Operation operand, ValueType sourceType) {
+        if (sourceType == ValueType.STRING) {
+            Double evaluated = evaluateLiteralExpression(operand);
+            if (evaluated != null) {
+                return "((" + targetType.javaName() + ") (" + formatLiteral(evaluated) + "))";
+            }
+            String parsed = "Double.parseDouble(String.valueOf(" + valueExpr + "))";
+            return targetType == ValueType.INT
+                ? "((" + targetType.javaName() + ") (" + parsed + "))"
+                : parsed;
+        }
+        return "((" + targetType.javaName() + ") (" + valueExpr + "))";
     }
 
     private static String renderMatch(Match match, GenerationContext context) {
@@ -387,9 +432,9 @@ public final class Visitor {
                 }
                 String fieldAccess;
                 if (i < fields.size()) {
-                    fieldAccess = alias + "." + fields.get(i).name();
+                    fieldAccess = alias + "." + fields.get(i).name() + "()";
                 } else {
-                    fieldAccess = alias + ".field" + (i + 1);
+                    fieldAccess = alias + ".component" + (i + 1) + "()";
                 }
                 builder.append("                    var ").append(localName).append(" = ").append(fieldAccess).append(";\n");
             }
@@ -425,47 +470,11 @@ public final class Visitor {
             sb.append("    public sealed interface ").append(dataType.javaName())
                 .append(" permits ").append(permits).append(" {}\n\n");
             for (GenerationContext.DataConstructorInfo constructor : dataType.constructors()) {
-                sb.append("    public static final class ").append(constructor.javaName())
-                    .append(" implements ").append(dataType.javaName()).append(" {\n");
-                for (GenerationContext.DataFieldInfo field : constructor.fields()) {
-                    sb.append("        public final ").append(field.javaType()).append(" ")
-                        .append(field.name()).append(";\n");
-                }
-                sb.append("        public ").append(constructor.javaName()).append("(")
-                    .append(renderConstructorParameters(constructor.fields()))
-                    .append(") {\n");
-                for (GenerationContext.DataFieldInfo field : constructor.fields()) {
-                    sb.append("            this.").append(field.name()).append(" = ").append(field.name()).append(";\n");
-                }
-                sb.append("        }\n");
-                sb.append("        @Override public String toString() {\n");
-                if (constructor.fields().isEmpty()) {
-                    sb.append("            return \"").append(constructor.javaName()).append("\";\n");
-                } else {
-                    sb.append("            var __sb = new StringBuilder(\"").append(constructor.javaName()).append("{\");\n");
-                    for (int i = 0; i < constructor.fields().size(); i++) {
-                        GenerationContext.DataFieldInfo field = constructor.fields().get(i);
-                        if (i > 0) {
-                            sb.append("            __sb.append(\", \");\n");
-                        }
-                        sb.append("            __sb.append(\"").append(field.name()).append("=\").append(").append(field.name()).append(");\n");
-                    }
-                    sb.append("            __sb.append('}');\n");
-                    sb.append("            return __sb.toString();\n");
-                }
-                sb.append("        }\n");
-                sb.append("    }\n\n");
+                sb.append("    public static record ").append(constructor.javaName()).append("(")
+                    .append(renderRecordComponents(constructor.fields()))
+                    .append(") implements ").append(dataType.javaName()).append(" {}\n\n");
             }
         }
-    }
-
-    private static String renderConstructorParameters(List<GenerationContext.DataFieldInfo> fields) {
-        if (fields.isEmpty()) {
-            return "";
-        }
-        return fields.stream()
-            .map(field -> field.javaType() + " " + field.name())
-            .collect(Collectors.joining(", "));
     }
 
     private static String renderRecordComponents(List<GenerationContext.DataFieldInfo> fields) {
@@ -486,6 +495,9 @@ public final class Visitor {
         }
         if (rhs instanceof Lambda lambda) {
             return resolveLambdaType(lambda, context);
+        }
+        if (rhs instanceof TypeCast cast) {
+            return ResolvedType.scalar(cast.targetType().javaName(), cast.targetType());
         }
         return ResolvedType.scalar("var", null);
     }
@@ -514,6 +526,9 @@ public final class Visitor {
         }
         if (op instanceof Text) {
             return ValueType.STRING;
+        }
+        if (op instanceof TypeCast cast) {
+            return cast.targetType();
         }
         if (op instanceof VarRef var) {
             ValueType local = localTypes.get(var.name());
@@ -565,6 +580,158 @@ public final class Visitor {
         if (op instanceof Lambda nested) {
             ResolvedType nestedResolved = resolveLambdaType(nested, context);
             return nestedResolved.returnType();
+        }
+        return null;
+    }
+
+    private static Double evaluateLiteralExpression(Operation operand) {
+        if (operand instanceof Text text) {
+            return evaluateLiteralExpression(text.value());
+        }
+        return null;
+    }
+
+    private static Double evaluateLiteralExpression(String expression) {
+        try {
+            return new LiteralExpressionParser(expression).parse();
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private static String formatLiteral(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            return "0.0";
+        }
+        String literal = Double.toString(value);
+        if (!literal.contains(".")) {
+            return literal + ".0";
+        }
+        return literal;
+    }
+
+    private static final class LiteralExpressionParser {
+        private final String source;
+        private int index;
+
+        LiteralExpressionParser(String source) {
+            this.source = source;
+        }
+
+        double parse() {
+            double value = parseExpression();
+            skipWhitespace();
+            if (index != source.length()) {
+                throw new IllegalArgumentException("Unexpected token at position " + index);
+            }
+            return value;
+        }
+
+        private double parseExpression() {
+            double value = parseTerm();
+            while (true) {
+                skipWhitespace();
+                if (match('+')) {
+                    value += parseTerm();
+                } else if (match('-')) {
+                    value -= parseTerm();
+                } else {
+                    break;
+                }
+            }
+            return value;
+        }
+
+        private double parseTerm() {
+            double value = parseFactor();
+            while (true) {
+                skipWhitespace();
+                if (match('*')) {
+                    value *= parseFactor();
+                } else if (match('/')) {
+                    value /= parseFactor();
+                } else {
+                    break;
+                }
+            }
+            return value;
+        }
+
+        private double parseFactor() {
+            skipWhitespace();
+            if (match('+')) {
+                return parseFactor();
+            }
+            if (match('-')) {
+                return -parseFactor();
+            }
+            if (match('(')) {
+                double value = parseExpression();
+                if (!match(')')) {
+                    throw new IllegalArgumentException("Missing closing parenthesis at position " + index);
+                }
+                return value;
+            }
+            return parseNumber();
+        }
+
+        private double parseNumber() {
+            skipWhitespace();
+            int start = index;
+            boolean hasDot = false;
+            while (index < source.length()) {
+                char ch = source.charAt(index);
+                if (Character.isDigit(ch)) {
+                    index++;
+                } else if (ch == '.') {
+                    if (hasDot) {
+                        throw new IllegalArgumentException("Unexpected '.' at position " + index);
+                    }
+                    hasDot = true;
+                    index++;
+                } else {
+                    break;
+                }
+            }
+            if (start == index) {
+                throw new IllegalArgumentException("Expected number at position " + index);
+            }
+            return Double.parseDouble(source.substring(start, index));
+        }
+
+        private boolean match(char expected) {
+            if (index < source.length() && source.charAt(index) == expected) {
+                index++;
+                return true;
+            }
+            return false;
+        }
+
+        private void skipWhitespace() {
+            while (index < source.length() && Character.isWhitespace(source.charAt(index))) {
+                index++;
+            }
+        }
+    }
+
+    private static ValueType guessValueType(Operation op, GenerationContext context) {
+        if (op instanceof Num) {
+            return ValueType.INT;
+        }
+        if (op instanceof Real) {
+            return ValueType.FLOAT;
+        }
+        if (op instanceof Text) {
+            return ValueType.STRING;
+        }
+        if (op instanceof TypeCast cast) {
+            return cast.targetType();
+        }
+        if (op instanceof VarRef var) {
+            ResolvedType resolved = context.lookupType(var.name());
+            if (resolved != null) {
+                return resolved.returnType();
+            }
         }
         return null;
     }
@@ -1022,7 +1189,7 @@ public final class Visitor {
             }
             if (stmt instanceof LetStatement let) {
                 Operation value = optimizeOperation(let.value(), new LambdaContext(null));
-                return new LetStatement(let.name(), value, let.comment());
+                return new LetStatement(let.name(), let.declaredType(), value, let.comment());
             }
             if (stmt instanceof FunStatement fun) {
                 List<String> params = fun.parameters().stream()
@@ -1090,6 +1257,10 @@ public final class Visitor {
                     cases.add(new MatchCase(matchCase.pattern(), body));
                 }
                 return new Match(target, cases);
+            }
+            if (op instanceof TypeCast cast) {
+                Operation value = optimizeOperation(cast.value(), lambdaCtx);
+                return new TypeCast(value, cast.targetType());
             }
             return op;
         }

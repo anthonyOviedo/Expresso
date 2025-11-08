@@ -1,18 +1,30 @@
-/////////////// TC4 //////////////////
+print("******************** TC4 testing ********************")
 
 /*
-
-Prueban que match se transpila correctamente a Java y funciona correctamente en
-conjunción con data y ^ .
-  
+Versión básica: prueba de pattern matching con data y ^.
+Nil = java null
 */
 
-
-let foo = 1
-fun a = x -> 666
-data foo{ // Identificador redefinido `foo`
-a, // Identificador redefinido `a`
-foo // Identificador redefinido `foo`
+data shape = {
+    Circle(radius:float),
+    Rectangle(length:float, width:float)
 }
-// Note que no hay identificador `b` redefinido aquí
-let b = x -> b
+
+
+fun shape_type(s:shape):string =
+    match s {
+        case Circle(r) -> "its a Circle",
+        case Rectangle(l, w) -> "its a Rectangle",
+        default -> "Unrecognized shape"
+    }
+
+let c = ^Circle(5.0)
+let r = ^Rectangle(3.0, 4.0)
+
+print(c)
+print(r)
+
+print(shape_type(c))
+print(shape_type(r))
+
+

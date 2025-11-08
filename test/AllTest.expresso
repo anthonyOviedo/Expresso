@@ -31,48 +31,82 @@ print(XOR(FALSE, TRUE))  // Expected 1
 print(XOR(FALSE, FALSE)) // Expected 0
 
 
+
+
+
+
+print( " ******************** TC1: Casos con Nuevos Tipos Primitivos ******************** " )
 /*
-Se soportan tipos Object ( any en Expresso ), flotantes ( float ) booleanos
-( boolean ) e hileras (estilo Java con " ). ( string ). Para tipo de usuario, se
-soportan declaraciones data que crean tipos de usuario, según se explica adelante.
+TC1: Casos con Nuevos Tipos Primitivos 
+Prueban uso de nuevos tipos y operaciones primitivas con y entre ellos. Se prueban con
+funciones incluyendo fun y recursividad.
 */
 
-/*
-Está disponible la declaración fun para lambdas como métodos. Es una declaración
-estatuto como un let pero permite una definición recursiva. Ejemplo:
-*/
 fun fill(n:int, s:string):string = n == 0 ? "" : ( s + fill(n - 1, s) )
-print(fill(10, "-"))
+print(fill(10, "a"))
 
 
 
-let abs = x:float -> x >= 0 ? x : -x // Uses >= and unary -
-print("Test abs:" + (abs(-666) == abs(--666)) )
 
-let a =  1e // Fully uppercased id. Issue floating-point using scientific notation
-print("a="  + a)
-
-let improve = (a:float, x:float) -> 0.5 * (x + a / x) 
-print("Test improve:" + (improve(1,1)) )
-
-
+print( " ******************** TC2: Declaraciones explicitas y Castings. ******************** " )
 /*
-Hay tipos explícitos. Una expressión se anota con su tipo usando el operador : . Si no
-se declara se asume any en esta versión; o en casos como un let se infiere del tipo
-del lado derecho. Por ejemplo:
+Prueban que se generan transpilan correctamente las declaraciones de tipos explícitas ( : ) a
+Java . Incluyen casos de castings.
 */
 
-
-let PI:float = 3.14
-let x = 666 // lo mismo que let x:int = 666
-fun cat(s:string t:string):string = s + t
-let my_pow:((float, int) -> float) = (x, n) -> x ** n
-let another_my_pow = (x:float, n:float) -> x ** n
+let foo:int = 1 // should create a int foo = 1;
+print (foo:string + ".000") // should output 1.000 
+Print("7+1":int) //should output 8
+Print("3/2":float) //should output 1.5
 
 
+
+
+
+print( " ******************** TC3: Casos de Declaraciones data y ^ ******************** " )
 /*
-Hay declaraciones data para datatypes, como se mencionó ya en el spec de arranque.
-Son sintácticamente estatutos como el let . Recuerde que se transpilan como
-sealed interfaces y permits con record para las implementaciones (ver spec
-original del proyecto). Ejemplos:
+Prueban que los data se transpilan correctamente a Java y que se pueden instanciar
+(operador ^ ).
 */
+
+data person = {
+    name,
+    age,
+    gender,
+    p_acocunt:account
+}
+
+data account = {
+    id:string,
+    balance:int 
+}
+
+let p1 = ^person("Antony",28,"Male",^account("a-123",123))
+print (p1)
+
+
+
+
+print( " ******************** TC4: Casos con Pattern-Matching (expresión match ) ******************** " )
+/*
+Prueban que match se transpila correctamente a Java y funciona correctamente en
+conjunción con data y ^ .
+*/
+
+data shape = {
+    Circle(radius:float),
+    Rectangle(length:float, width:float)
+}
+
+fun getPerimeter(s:shape):float =
+    match s {
+        case Circle(r) => 2 * r * 3.14159
+        case Rectangle(l, w) => 2 * l + 2 * w
+        default => error("Unrecognized shape")
+    }
+
+let c = ^Circle(5.0)
+let r = ^Rectangle(3.0, 4.0)
+
+print(getPerimeter(c))
+print(getPerimeter(r))

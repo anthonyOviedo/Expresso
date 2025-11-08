@@ -16,7 +16,7 @@ public final class Ast {
 
     public sealed interface Statement extends Node permits LetStatement, PrintStatement, ExprStatement, CommentStatement, FunStatement, DataDeclaration { }
 
-    public sealed interface Operation extends Node permits Num, Real, UnaryOper, BinaryOper, Lambda, Call, VarRef, Ternary, Text, DataConstructorCall, Match { }
+    public sealed interface Operation extends Node permits Num, Real, UnaryOper, BinaryOper, Lambda, Call, VarRef, Ternary, Text, DataConstructorCall, Match, TypeCast { }
 
     public static record Num(int value) implements Operation { }
     public static record Real(double value) implements Operation { }
@@ -25,7 +25,7 @@ public final class Ast {
         public Program { statements = List.copyOf(Objects.requireNonNull(statements)); }
     }
 
-    public static record LetStatement(String name, Operation value, String comment) implements Statement {
+    public static record LetStatement(String name, ValueType declaredType, Operation value, String comment) implements Statement {
         public LetStatement {
             Objects.requireNonNull(name);
             Objects.requireNonNull(value);
@@ -142,6 +142,13 @@ public final class Ast {
         }
     }
 
+    public static record TypeCast(Operation value, ValueType targetType) implements Operation {
+        public TypeCast {
+            Objects.requireNonNull(value);
+            Objects.requireNonNull(targetType);
+        }
+    }
+
     public static record DataConstructorCall(String name, List<Operation> arguments) implements Operation {
         public DataConstructorCall {
             Objects.requireNonNull(name);
@@ -188,7 +195,8 @@ public final class Ast {
         INT("int", "Integer"),
         FLOAT("double", "Double"),
         STRING("String", "String"),
-        BOOLEAN("boolean", "Boolean");
+        BOOLEAN("boolean", "Boolean"),
+        ANY("Object", "Object");
 
         private final String javaRepresentation;
         private final String boxedRepresentation;
@@ -235,6 +243,12 @@ public final class Ast {
             }
             if ("string".equalsIgnoreCase(literal)) {
                 return STRING;
+            }
+            if ("boolean".equalsIgnoreCase(literal)) {
+                return BOOLEAN;
+            }
+            if ("any".equalsIgnoreCase(literal)) {
+                return ANY;
             }
             throw new IllegalArgumentException("Unsupported type: " + literal);
         }

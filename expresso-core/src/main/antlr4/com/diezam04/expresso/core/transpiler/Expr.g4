@@ -11,8 +11,8 @@ prog
 
 stat
     : 'fun' ID '(' paramDeclList? ')' ':' type '=' expr comment? # funStat
-    | 'let' ID '=' expr comment?      # letStat
-    | 'print' expr comment?           # printStat
+    | 'let' ID (':' typeRef)? '=' expr comment?      # letStat
+    | PRINT expr comment?           # printStat
     | 'data' ID dataBlock comment?    # dataStat
     | expr comment?                   # exprStat
     | comment                         # commentStat
@@ -77,6 +77,7 @@ expr
     | expr op=('=='|'!=') expr        # Equality
     | expr '?' expr ':' expr          # Ternary
     | params '->' expr                # Lambda
+    | expr ':' typeRef                # TypeCast
     | 'match' expr 'with' matchCase ('|' matchCase)* # matchExpr
     | FLOAT_E                         # EulerFloat
     | FLOAT                           # Float
@@ -118,6 +119,7 @@ lambdaParam
     ;
 
 // ---- Lexer ----
+PRINT: [Pp][Rr][Ii][Nn][Tt];
 ID: [a-zA-Z_] [a-zA-Z_0-9]*;
 FLOAT_E
     : (DIGITS '.' DIGITS* | DIGITS '.' | DIGITS | '.' DIGITS) 'e'
