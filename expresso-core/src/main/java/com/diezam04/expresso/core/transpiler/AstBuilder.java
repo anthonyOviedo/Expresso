@@ -79,7 +79,8 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
         Operation value = visitOperation(ctx.expr());
         ValueType declaredType = ctx.typeRef() == null ? null : parseValueType(ctx.typeRef());
         String comment = ctx.comment() != null ? ctx.comment().getText() : null;
-        return new LetStatement(ctx.ID().getText(), declaredType, value, comment);
+        String typeLiteral = ctx.typeRef() == null ? null : ctx.typeRef().getText();
+        return new LetStatement(ctx.ID().getText(), declaredType, typeLiteral, value, comment);
     }
 
     @Override
@@ -305,10 +306,14 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
 
     private static ConstructorSpec toConstructorSpec(ExprParser.DataConstructorContext ctx) {
         String name = ctx.ID().getText();
-        if (ctx.dataFieldList() != null) {
-            List<DataField> params = ctx.dataFieldList().dataField().stream()
-                .map(AstBuilder::toDataField)
-                .collect(Collectors.toList());
+        boolean hasParentheses = ctx.getChildCount() >= 3
+            && "(".equals(ctx.getChild(1).getText());
+        if (ctx.dataFieldList() != null || hasParentheses) {
+            List<DataField> params = ctx.dataFieldList() == null
+                ? List.of()
+                : ctx.dataFieldList().dataField().stream()
+                    .map(AstBuilder::toDataField)
+                    .collect(Collectors.toList());
             return ConstructorSpec.variant(name, params);
         }
         String typeLiteral = ctx.typeRef() == null ? null : ctx.typeRef().getText();

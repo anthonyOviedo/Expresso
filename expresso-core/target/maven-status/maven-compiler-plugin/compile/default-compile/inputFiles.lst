@@ -1,6 +1,7 @@
 /home/tony/proyectos/Expresso/expresso-core/src/main/java/com/diezam04/expresso/core/Builder.java
 /home/tony/proyectos/Expresso/expresso-core/src/main/java/com/diezam04/expresso/core/Runner.java
 /home/tony/proyectos/Expresso/expresso-core/src/main/java/com/diezam04/expresso/core/Transpiler.java
+/home/tony/proyectos/Expresso/expresso-core/src/main/java/com/diezam04/expresso/core/Typer.java
 /home/tony/proyectos/Expresso/expresso-core/src/main/java/com/diezam04/expresso/core/Utils.java
 /home/tony/proyectos/Expresso/expresso-core/src/main/java/com/diezam04/expresso/core/transpiler/AstBuilder.java
 /home/tony/proyectos/Expresso/expresso-core/src/main/java/com/diezam04/expresso/core/transpiler/Visitor.java

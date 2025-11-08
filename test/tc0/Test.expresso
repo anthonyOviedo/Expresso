@@ -1,0 +1,7 @@
+data MyList = {
+    Cons(head:int, tail:MyList),
+    Nil()
+}
+
+let myList = ^Cons(666, ^Nil)
+print(myList)

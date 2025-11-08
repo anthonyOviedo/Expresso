@@ -25,10 +25,13 @@ public final class Ast {
         public Program { statements = List.copyOf(Objects.requireNonNull(statements)); }
     }
 
-    public static record LetStatement(String name, ValueType declaredType, Operation value, String comment) implements Statement {
+    public static record LetStatement(String name, ValueType declaredType, String declaredTypeLiteral, Operation value, String comment) implements Statement {
         public LetStatement {
             Objects.requireNonNull(name);
             Objects.requireNonNull(value);
+            if (declaredType != null && (declaredTypeLiteral == null || declaredTypeLiteral.isBlank())) {
+                throw new IllegalArgumentException("Declared type literal must not be blank when a type is provided");
+            }
             comment = normalizeComment(comment);
         }
     }
@@ -242,6 +245,9 @@ public final class Ast {
                 return INT;
             }
             if ("float".equalsIgnoreCase(literal)) {
+                return FLOAT;
+            }
+            if ("double".equalsIgnoreCase(literal)) {
                 return FLOAT;
             }
             if ("string".equalsIgnoreCase(literal)) {

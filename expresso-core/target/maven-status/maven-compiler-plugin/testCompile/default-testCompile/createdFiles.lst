@@ -1,3 +1,4 @@
-com/diezam04/expresso/core/TranspilerTest.class
+com/diezam04/expresso/core/TyperTest.class
 com/diezam04/expresso/core/RunnerTest.class
 com/diezam04/expresso/core/BuilderTest.class
+com/diezam04/expresso/core/TranspilerTest.class

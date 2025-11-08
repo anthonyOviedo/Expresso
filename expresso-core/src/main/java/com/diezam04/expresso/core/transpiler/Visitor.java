@@ -1197,7 +1197,7 @@ public final class Visitor {
             }
             if (stmt instanceof LetStatement let) {
                 Operation value = optimizeOperation(let.value(), new LambdaContext(null));
-                return new LetStatement(let.name(), let.declaredType(), value, let.comment());
+                return new LetStatement(let.name(), let.declaredType(), let.declaredTypeLiteral(), value, let.comment());
             }
             if (stmt instanceof FunStatement fun) {
                 List<String> params = fun.parameters().stream()

@@ -6,6 +6,8 @@
 
 package com.diezam04.expresso.core;
 
+import java.nio.file.Path;
+
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -22,10 +24,18 @@ public final class Transpiler {
     private Transpiler() { throw new AssertionError("Utility class"); }
 
     public static String run(String expressoSource) {
-        return run(expressoSource, "Main");        
+        return run(expressoSource, "Main", null, null);        
     }
 
     public static String run(String expressoSource, String className) {
+        return run(expressoSource, className, null, null);
+    }
+
+    public static String run(String expressoSource, String className, Path sourceFile) {
+        return run(expressoSource, className, sourceFile, null);
+    }
+
+    public static String run(String expressoSource, String className, Path sourceFile, Path typingsOutDir) {
         if (expressoSource == null || expressoSource.isBlank()) {
             Utils.log("Transpiler received empty source", "ERROR");
             return "";
@@ -33,6 +43,7 @@ public final class Transpiler {
         try {
             ParseTree tree = parseToAst(expressoSource);
             Program program = new AstBuilder().build(tree);
+            Typer.analyze(program, sourceFile, typingsOutDir);
             return Visitor.generate(program, className);
         } catch (RuntimeException ex) {
             Utils.log("Transpilation failed: " + ex.getMessage(), "ERROR");

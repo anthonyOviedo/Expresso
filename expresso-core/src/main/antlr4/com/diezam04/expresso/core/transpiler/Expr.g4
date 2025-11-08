@@ -41,6 +41,7 @@ dataField
 typeRef
     : 'int'
     | 'float'
+    | 'double'
     | 'string'
     | 'boolean'
     | 'any'

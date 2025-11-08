@@ -7,7 +7,10 @@ funciones incluyendo fun y recursividad.
   
 */
 
+fun cat(s:string, t:string):string = s + t
+
+print (cat("Hello","World"))
 
 fun fill(n:int, s:string):string = n == 0 ? "" : ( s + fill(n - 1, s) )
 
-print(fill(234, "b"))
+print(fill(100, "hoehoe"))

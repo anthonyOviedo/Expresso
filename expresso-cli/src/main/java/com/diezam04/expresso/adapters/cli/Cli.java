@@ -6,6 +6,7 @@
 package com.diezam04.expresso.adapters.cli;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -13,10 +14,6 @@ import com.diezam04.expresso.core.Builder;
 import com.diezam04.expresso.core.Runner;
 import com.diezam04.expresso.core.Transpiler;
 import com.diezam04.expresso.core.Utils;
-import com.diezam04.expresso.core.transpiler.AstBuilder;
-import com.diezam04.expresso.core.transpiler.Visitor;
-import com.diezam04.expresso.core.transpiler.src.ast.Ast.Program;
-
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -60,11 +57,11 @@ public Integer transpile(@Parameters(index = "0", paramLabel = "SOURCE") File so
                          @Option(names = "--out") String outDir,
                          @Option(names = "--verbose") boolean verbose) {
     Utils.setVerbose(verbose);
-    return processFile(source, outDir, "java", content -> {
-        Program program = new AstBuilder().build(Transpiler.parseToAst(content));
-        String baseName = source.getName().replaceFirst("\\.[^.]+$", "");
-        return Visitor.generate(program, baseName);
-    }, null);
+        return processFile(source, outDir, "java", content -> {
+            String baseName = source.getName().replaceFirst("\\.[^.]+$", "");
+            Path typingsOut = outDir == null ? null : Path.of(outDir).toAbsolutePath();
+            return Transpiler.run(content, baseName, source.toPath(), typingsOut);
+        }, null);
 }
 
 @Command(name = "build", description = "Build a source file, it generates a .class")
@@ -75,7 +72,8 @@ public Integer build(@Parameters(index = "0", paramLabel = "SOURCE") File source
     String baseName = source.getName().replaceFirst("\\.[^.]+$", "");
     String className = Character.toUpperCase(baseName.charAt(0)) + baseName.substring(1);
     // transformer: from expresso source -> java source -> Builder.run(javaSource) returns path to .class
-    return processFile(source, outDir, "class", fileContent -> Builder.run(Transpiler.run(fileContent, className)), null);
+    Path typingsOut = outDir == null ? null : Path.of(outDir).toAbsolutePath();
+    return processFile(source, outDir, "class", fileContent -> Builder.run(Transpiler.run(fileContent, className, source.toPath(), typingsOut)), null);
 }
 
 @Command(name = "run", description = "Run a source file, executes .class files")
@@ -85,7 +83,8 @@ public Integer run(@Parameters(index = "0", paramLabel = "SOURCE") File source,
     Utils.setVerbose(verbose);
     String baseName = source.getName().replaceFirst("\\.[^.]+$", "");
     String className = Character.toUpperCase(baseName.charAt(0)) + baseName.substring(1);
-    return processFile(source, outDir, "class", fileContent -> Builder.run(Transpiler.run(fileContent, className)), () -> {
+    Path typingsOut = outDir == null ? null : Path.of(outDir).toAbsolutePath();
+    return processFile(source, outDir, "class", fileContent -> Builder.run(Transpiler.run(fileContent, className, source.toPath(), typingsOut)), () -> {
         try {
             String baseNameInner = source.getName().replaceFirst("\\.[^.]+$", "");
             File outFile = new File(Optional.ofNullable(outDir).orElse("."), baseNameInner + ".class");

@@ -7,9 +7,49 @@ a. El typer detecta posibles identificadores no definidos .
 b. El typer detecta posibles identificadores redefinidos .
 c. El typer genera el archivo de todos los tipos recolectados en el archivo .typings .
   
+El typer es parte de la fase de build de expressor .
+
+- El typer recorre el AST del .expresso como visitor.
+
+- El typer recolecta y registra los tipos de cada identificador declarado a nivel global y los
+almacena en una estructura de contexto que permita su acceso
+
+- El typer recolecta y registra los tipos derivados de cada declaración let , fun y
+data en el archivo .expresso .
+
+- El typer detecta identificadores no definidos incluyendo identificadores de tipos. Da errores
+en cada caso y termina la ejecución de expresso (fase de build es fallida. Se debe
+anular el .java ).
+
+- El typer detecta redefiniciones de identificadores, como antes da errores y termina la
+ejecución de expresso.
+
+- Si no hay errores como los anteriores, el typer simplemente genera un archivo de texto file.expresso.typings (dondefile es el nombre de archivo siendo procesado).
+
+- El proceso de transpilación continúa generando el .java usando el contexto generado por el typer.
+  
 */
 
+let z:double = 1
+let x = 0
 
-fun fill(n:int, s:string):string = n == 0 ? "" : ( s + fill(n - 1, s) )
+data shape = {
+    Circle(radius:float),
+    Rectangle(length:float, width:float)
+}
 
-print(fill(234, "b"))
+
+
+/*
+Entonces typer.java debe generar tc5/Test.expresso.typings donde contiene lo siguiente. Note que usamos ~ para decir
+un tipo no declarado. Note que solo recolecta los definidos al "top-level" (scope más externo).
+Se genera una declaración por línea
+
+# foo.expresso
+z: double
+x: ~
+shape: Circle|Rectangle
+Circle: float ^ shape
+Rectangle: float , float ^ shape 
+
+*/
