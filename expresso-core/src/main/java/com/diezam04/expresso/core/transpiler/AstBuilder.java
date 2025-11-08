@@ -14,10 +14,17 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.BinaryOper;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Call;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.CommentStatement;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.ConstructorPattern;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.ExprStatement;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.DataConstructor;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.DataConstructorCall;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.DataDeclaration;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.DataField;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.FunStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Lambda;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.LambdaParam;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.Match;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.MatchCase;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.LetStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Num;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Oper;
@@ -32,6 +39,7 @@ import com.diezam04.expresso.core.transpiler.src.ast.Ast.UnaryOper;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.ValueType;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.VarRef;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Real;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.WildcardPattern;
 
 public final class AstBuilder extends ExprBaseVisitor<Object> {
 
@@ -78,6 +86,20 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
         Operation expr = visitOperation(ctx.expr());
         String comment = ctx.comment() != null ? ctx.comment().getText() : null;
         return new PrintStatement(expr, comment);
+    }
+
+    @Override
+    public Object visitDataStat(ExprParser.DataStatContext ctx) {
+        List<ConstructorSpec> specs = new ArrayList<>();
+        ExprParser.DataBlockContext block = ctx.dataBlock();
+        if (block != null && block.constructorList() != null) {
+            for (ExprParser.DataConstructorContext ctorCtx : block.constructorList().dataConstructor()) {
+                specs.add(toConstructorSpec(ctorCtx));
+            }
+        }
+        List<DataConstructor> constructors = buildConstructors(ctx.ID().getText(), specs);
+        String comment = ctx.comment() != null ? ctx.comment().getText() : null;
+        return new DataDeclaration(ctx.ID().getText(), constructors, comment);
     }
 
     @Override
@@ -175,6 +197,25 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
         return new Ternary(visitOperation(ctx.expr(0)), visitOperation(ctx.expr(1)), visitOperation(ctx.expr(2)));
     }
 
+    @Override
+    public Object visitCtorCall(ExprParser.CtorCallContext ctx) {
+        List<Operation> args = ctx.argumentList() == null
+            ? List.of()
+            : ctx.argumentList().expr().stream()
+                .map(this::visitOperation)
+                .collect(Collectors.toList());
+        return new DataConstructorCall(ctx.ID().getText(), args);
+    }
+
+    @Override
+    public Object visitMatchExpr(ExprParser.MatchExprContext ctx) {
+        Operation target = visitOperation(ctx.expr());
+        List<MatchCase> cases = ctx.matchCase().stream()
+            .map(this::toMatchCase)
+            .collect(Collectors.toList());
+        return new Match(target, cases);
+    }
+
     private Operation visitOperation(ParseTree tree) {
         return (Operation) visit(tree);
     }
@@ -196,6 +237,107 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
 
     private static Parameter toParameter(ExprParser.ParamDeclContext ctx) {
         return new Parameter(ctx.ID().getText(), parseType(ctx.type()));
+    }
+
+    private static DataConstructor toDataConstructor(ExprParser.DataConstructorContext ctx) {
+        List<DataField> fields = new ArrayList<>();
+        if (ctx.dataFieldList() != null) {
+            for (ExprParser.DataFieldContext fieldCtx : ctx.dataFieldList().dataField()) {
+                fields.add(toDataField(fieldCtx));
+            }
+        }
+        return new DataConstructor(ctx.ID().getText(), fields);
+    }
+
+    private static DataField toDataField(ExprParser.DataFieldContext ctx) {
+        String typeLiteral = ctx.typeRef() == null ? null : ctx.typeRef().getText();
+        return new DataField(ctx.ID().getText(), typeLiteral);
+    }
+
+    private MatchCase toMatchCase(ExprParser.MatchCaseContext ctx) {
+        return new MatchCase(toPattern(ctx.pattern()), visitOperation(ctx.expr()));
+    }
+
+    private static com.diezam04.expresso.core.transpiler.src.ast.Ast.Pattern toPattern(ExprParser.PatternContext ctx) {
+        if (ctx instanceof ExprParser.WildcardPatternContext) {
+            return new WildcardPattern();
+        }
+        ExprParser.ConstructorPatternContext ctor = (ExprParser.ConstructorPatternContext) ctx;
+        List<String> bindings = new ArrayList<>();
+        if (ctor.patternParamList() != null) {
+            for (ExprParser.PatternParamContext param : ctor.patternParamList().patternParam()) {
+                bindings.add(param.getText());
+            }
+        }
+        return new ConstructorPattern(ctor.ID().getText(), bindings);
+    }
+
+    private static List<DataConstructor> buildConstructors(String typeName, List<ConstructorSpec> specs) {
+        if (specs.isEmpty()) {
+            return List.of();
+        }
+        boolean allFields = specs.stream().allMatch(ConstructorSpec::isRecordField);
+        if (allFields) {
+            List<DataField> fields = specs.stream()
+                .map(spec -> new DataField(spec.name(), spec.fieldType()))
+                .collect(Collectors.toList());
+            return List.of(new DataConstructor(typeName, fields));
+        }
+        boolean hasFieldEntry = specs.stream().anyMatch(ConstructorSpec::isRecordField);
+        if (hasFieldEntry) {
+            throw new IllegalArgumentException("Cannot mix record-style fields with constructor variants in data type '" + typeName + "'");
+        }
+        return specs.stream()
+            .map(spec -> new DataConstructor(spec.name(), spec.parameters()))
+            .collect(Collectors.toList());
+    }
+
+    private static ConstructorSpec toConstructorSpec(ExprParser.DataConstructorContext ctx) {
+        String name = ctx.ID().getText();
+        if (ctx.dataFieldList() != null) {
+            List<DataField> params = ctx.dataFieldList().dataField().stream()
+                .map(AstBuilder::toDataField)
+                .collect(Collectors.toList());
+            return ConstructorSpec.variant(name, params);
+        }
+        String typeLiteral = ctx.typeRef() == null ? null : ctx.typeRef().getText();
+        return ConstructorSpec.recordField(name, typeLiteral);
+    }
+
+    private static final class ConstructorSpec {
+        private final String name;
+        private final List<DataField> parameters;
+        private final String fieldType;
+
+        private ConstructorSpec(String name, List<DataField> parameters, String fieldType) {
+            this.name = name;
+            this.parameters = parameters;
+            this.fieldType = fieldType;
+        }
+
+        static ConstructorSpec variant(String name, List<DataField> params) {
+            return new ConstructorSpec(name, List.copyOf(params), null);
+        }
+
+        static ConstructorSpec recordField(String name, String fieldType) {
+            return new ConstructorSpec(name, null, fieldType);
+        }
+
+        boolean isRecordField() {
+            return parameters == null;
+        }
+
+        String name() {
+            return name;
+        }
+
+        List<DataField> parameters() {
+            return parameters == null ? List.of() : parameters;
+        }
+
+        String fieldType() {
+            return fieldType;
+        }
     }
 
     private static ValueType parseType(ExprParser.TypeContext ctx) {

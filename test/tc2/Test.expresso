@@ -1,0 +1,10 @@
+/////////////// TC2 //////////////////
+
+/*
+
+Declaraciones explicitas y Castings.
+  
+*/
+
+let foo:int = 1 // Identificador "Int" no definido
+Print("666.66":int)

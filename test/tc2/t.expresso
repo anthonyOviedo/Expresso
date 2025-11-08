@@ -1,9 +1,0 @@
-/////////////// TC2 //////////////////
-
-/*
-
-Prueban que se generan transpilan correctamente las declaraciones de tipos explícitas ( : ) a
-Java . Incluyen casos de castings.
-  
-*/
-

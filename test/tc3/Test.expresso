@@ -1,0 +1,26 @@
+/////////////// TC3 //////////////////
+
+/*
+
+Prueban que los data se transpilan correctamente a Java y que se pueden instanciar
+(operador ^ is for creating a new object from class ).
+sealed interfaces y permits con record
+Nil = Null (in java)
+the person uses the data 
+
+*/
+
+data person = {
+    name,
+    age,
+    gender,
+    p_acocunt:account
+}
+
+data account = {
+    id:string,
+    balance:int 
+}
+
+let p1 = ^person("Antony",28,"Male",^account("a-123",123))
+print (p1)

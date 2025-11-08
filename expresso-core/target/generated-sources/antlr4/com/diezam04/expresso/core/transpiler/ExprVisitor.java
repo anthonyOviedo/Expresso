@@ -38,6 +38,13 @@ public interface ExprVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitPrintStat(ExprParser.PrintStatContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code dataStat}
+	 * labeled alternative in {@link ExprParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDataStat(ExprParser.DataStatContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprStat}
 	 * labeled alternative in {@link ExprParser#stat}.
 	 * @param ctx the parse tree
@@ -51,6 +58,42 @@ public interface ExprVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitCommentStat(ExprParser.CommentStatContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ExprParser#dataBlock}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDataBlock(ExprParser.DataBlockContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ExprParser#constructorList}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConstructorList(ExprParser.ConstructorListContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ExprParser#dataConstructor}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDataConstructor(ExprParser.DataConstructorContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ExprParser#dataFieldList}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDataFieldList(ExprParser.DataFieldListContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ExprParser#dataField}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDataField(ExprParser.DataFieldContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ExprParser#typeRef}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeRef(ExprParser.TypeRefContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ExprParser#paramDeclList}.
 	 * @param ctx the parse tree
@@ -83,6 +126,13 @@ public interface ExprVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitCall(ExprParser.CallContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code ctorCall}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCtorCall(ExprParser.CtorCallContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code MulDiv}
 	 * labeled alternative in {@link ExprParser#expr}.
 	 * @param ctx the parse tree
@@ -110,6 +160,13 @@ public interface ExprVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitParens(ExprParser.ParensContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code matchExpr}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMatchExpr(ExprParser.MatchExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code IdRef}
 	 * labeled alternative in {@link ExprParser#expr}.
@@ -180,6 +237,38 @@ public interface ExprVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitLambda(ExprParser.LambdaContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ExprParser#matchCase}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMatchCase(ExprParser.MatchCaseContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code wildcardPattern}
+	 * labeled alternative in {@link ExprParser#pattern}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitWildcardPattern(ExprParser.WildcardPatternContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code constructorPattern}
+	 * labeled alternative in {@link ExprParser#pattern}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConstructorPattern(ExprParser.ConstructorPatternContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ExprParser#patternParamList}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPatternParamList(ExprParser.PatternParamListContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ExprParser#patternParam}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPatternParam(ExprParser.PatternParamContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ExprParser#argumentList}.
 	 * @param ctx the parse tree

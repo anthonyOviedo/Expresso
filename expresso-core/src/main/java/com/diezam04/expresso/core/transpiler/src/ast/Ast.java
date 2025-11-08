@@ -14,9 +14,9 @@ public final class Ast {
 
     public sealed interface Node permits Program, Statement, Operation { }
 
-    public sealed interface Statement extends Node permits LetStatement, PrintStatement, ExprStatement, CommentStatement, FunStatement { }
+    public sealed interface Statement extends Node permits LetStatement, PrintStatement, ExprStatement, CommentStatement, FunStatement, DataDeclaration { }
 
-    public sealed interface Operation extends Node permits Num, Real, UnaryOper, BinaryOper, Lambda, Call, VarRef, Ternary, Text { }
+    public sealed interface Operation extends Node permits Num, Real, UnaryOper, BinaryOper, Lambda, Call, VarRef, Ternary, Text, DataConstructorCall, Match { }
 
     public static record Num(int value) implements Operation { }
     public static record Real(double value) implements Operation { }
@@ -50,6 +50,27 @@ public final class Ast {
     public static record CommentStatement(String text) implements Statement {
         public CommentStatement {
             Objects.requireNonNull(text);
+        }
+    }
+
+    public static record DataDeclaration(String name, List<DataConstructor> constructors, String comment) implements Statement {
+        public DataDeclaration {
+            Objects.requireNonNull(name);
+            constructors = List.copyOf(Objects.requireNonNull(constructors));
+            comment = normalizeComment(comment);
+        }
+    }
+
+    public static record DataConstructor(String name, List<DataField> fields) {
+        public DataConstructor {
+            Objects.requireNonNull(name);
+            fields = List.copyOf(Objects.requireNonNull(fields));
+        }
+    }
+
+    public static record DataField(String name, String typeLiteral) {
+        public DataField {
+            Objects.requireNonNull(name);
         }
     }
 
@@ -118,6 +139,48 @@ public final class Ast {
     public static record Text(String value) implements Operation {
         public Text {
             Objects.requireNonNull(value);
+        }
+    }
+
+    public static record DataConstructorCall(String name, List<Operation> arguments) implements Operation {
+        public DataConstructorCall {
+            Objects.requireNonNull(name);
+            arguments = List.copyOf(Objects.requireNonNull(arguments));
+        }
+    }
+
+    public static record Match(Operation target, List<MatchCase> cases) implements Operation {
+        public Match {
+            Objects.requireNonNull(target);
+            cases = List.copyOf(Objects.requireNonNull(cases));
+        }
+    }
+
+    public static record MatchCase(Pattern pattern, Operation body) {
+        public MatchCase {
+            Objects.requireNonNull(pattern);
+            Objects.requireNonNull(body);
+        }
+    }
+
+    public sealed interface Pattern permits ConstructorPattern, WildcardPattern { }
+
+    public static record ConstructorPattern(String constructorName, List<String> bindings) implements Pattern {
+        public ConstructorPattern {
+            Objects.requireNonNull(constructorName);
+            bindings = List.copyOf(Objects.requireNonNull(bindings));
+        }
+    }
+
+    public static final class WildcardPattern implements Pattern {
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof WildcardPattern;
+        }
+
+        @Override
+        public int hashCode() {
+            return 1;
         }
     }
 

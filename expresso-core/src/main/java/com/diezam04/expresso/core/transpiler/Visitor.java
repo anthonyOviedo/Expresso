@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,11 +22,18 @@ import java.util.stream.Collectors;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.BinaryOper;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Call;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.CommentStatement;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.ConstructorPattern;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.DataConstructor;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.DataConstructorCall;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.DataDeclaration;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.DataField;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.ExprStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.FunStatement;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Lambda;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.LambdaParam;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.LetStatement;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.Match;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.MatchCase;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Num;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Operation;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Parameter;
@@ -37,6 +46,7 @@ import com.diezam04.expresso.core.transpiler.src.ast.Ast.UnaryOper;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.ValueType;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.VarRef;
 import com.diezam04.expresso.core.transpiler.src.ast.Ast.Real;
+import com.diezam04.expresso.core.transpiler.src.ast.Ast.WildcardPattern;
 
 public final class Visitor {
 
@@ -63,6 +73,7 @@ public final class Visitor {
         }
         sb.append("public class ").append(normalizedClassName).append(" {\n\n");
         sb.append("    public static void print(Object arg) { System.out.println(arg); }\n\n");
+        renderDataTypes(sb, context);
         sb.append("    public static void main(String... args) {\n");
         for (String stmt : statements) {
             sb.append("        ").append(stmt).append('\n');
@@ -95,6 +106,10 @@ public final class Visitor {
             String expr = genExpr(printStatement.value(), context);
             String base = "print(" + expr + ");";
             return List.of(appendInlineComment(base, printStatement.comment()));
+        }
+        if (stmt instanceof DataDeclaration dataDeclaration) {
+            context.registerData(dataDeclaration);
+            return List.of();
         }
         if (stmt instanceof ExprStatement exprStatement) {
             String base = genExpr(exprStatement.value(), context) + ";";
@@ -176,6 +191,12 @@ public final class Visitor {
             return "\"" + escapeJavaString(text.value()) + "\"";
         }
         if (expr instanceof VarRef var) {
+            if (!context.hasBinding(var.name())) {
+                GenerationContext.DataConstructorInfo ctorInfo = context.lookupConstructor(var.name());
+                if (ctorInfo != null && ctorInfo.fields().isEmpty()) {
+                    return "new " + ctorInfo.javaName() + "()";
+                }
+            }
             return context.resolveName(var.name());
         }
         if (expr instanceof UnaryOper unary) {
@@ -232,6 +253,12 @@ public final class Visitor {
                 .collect(Collectors.joining(", "));
             return callee + "." + method + "(" + args + ")";
         }
+        if (expr instanceof DataConstructorCall ctorCall) {
+            return renderConstructorCall(ctorCall, context);
+        }
+        if (expr instanceof Match match) {
+            return renderMatch(match, context);
+        }
         return "";
     }
 
@@ -251,6 +278,200 @@ public final class Visitor {
         }
 
         return "(" + rendered + " != 0)";
+    }
+
+    private static String renderConstructorCall(DataConstructorCall call, GenerationContext context) {
+        GenerationContext.DataConstructorInfo info = context.lookupConstructor(call.name());
+        if (info == null) {
+            GenerationContext.DataTypeInfo dataType = context.lookupDataType(call.name());
+            if (dataType != null) {
+                if (call.arguments().isEmpty()) {
+                    throw new IllegalArgumentException("Constructor for data type '" + call.name() + "' requires a variant name");
+                }
+                Operation variantExpr = call.arguments().get(0);
+                if (variantExpr instanceof VarRef variantRef) {
+                    GenerationContext.DataConstructorInfo variantInfo = context.lookupConstructor(variantRef.name());
+                    if (variantInfo != null && variantInfo.ownerJavaType().equals(dataType.javaName())) {
+                        List<Operation> remaining = new ArrayList<>(call.arguments().subList(1, call.arguments().size()));
+                        return renderConstructorCall(new DataConstructorCall(variantInfo.originalName(), remaining), context);
+                    }
+                }
+                throw new IllegalArgumentException("Unknown variant for data type '" + call.name() + "'");
+            }
+            throw new IllegalArgumentException("Unknown constructor: " + call.name());
+        }
+        String javaCtor = info.javaName();
+        String args = call.arguments().stream()
+            .map(arg -> genExpr(arg, context))
+            .collect(Collectors.joining(", "));
+        return "new " + javaCtor + "(" + args + ")";
+    }
+
+    private static String renderMatch(Match match, GenerationContext context) {
+        String javaType = inferMatchJavaType(match, context);
+        String valueVar = context.reserveLetName("matchValue");
+        StringBuilder builder = new StringBuilder();
+        builder.append("(new Object() {\n");
+        builder.append("            ").append(javaType).append(" run() {\n");
+        builder.append("                var ").append(valueVar).append(" = ").append(genExpr(match.target(), context)).append(";\n");
+        for (MatchCase matchCase : match.cases()) {
+            builder.append(renderMatchCase(matchCase, valueVar, context));
+        }
+        builder.append("                throw new IllegalStateException(\"Non-exhaustive match\");\n");
+        builder.append("            }\n");
+        builder.append("        }).run()");
+        return builder.toString();
+    }
+
+    private static String inferMatchJavaType(Match match, GenerationContext context) {
+        String javaType = null;
+        for (MatchCase matchCase : match.cases()) {
+            String candidate = inferOperationJavaType(matchCase.body(), context);
+            if (javaType == null) {
+                javaType = candidate;
+            } else if (!javaType.equals(candidate)) {
+                return "Object";
+            }
+        }
+        return javaType == null ? "Object" : javaType;
+    }
+
+    private static String inferOperationJavaType(Operation op, GenerationContext context) {
+        if (op instanceof Num) {
+            return "int";
+        }
+        if (op instanceof Real) {
+            return "double";
+        }
+        if (op instanceof Text) {
+            return "String";
+        }
+        if (op instanceof DataConstructorCall ctorCall) {
+            GenerationContext.DataConstructorInfo info = context.lookupConstructor(ctorCall.name());
+            if (info != null) {
+                return info.ownerJavaType();
+            }
+            GenerationContext.DataTypeInfo dataType = context.lookupDataType(ctorCall.name());
+            if (dataType != null) {
+                return dataType.javaName();
+            }
+            return capitalize(ctorCall.name());
+        }
+        if (op instanceof VarRef var) {
+            ResolvedType resolved = context.lookupType(var.name());
+            if (resolved != null) {
+                String declaration = resolved.declaration();
+                if (!"var".equals(declaration)) {
+                    return declaration;
+                }
+            }
+        }
+        return "Object";
+    }
+
+    private static String renderMatchCase(MatchCase matchCase, String valueVar, GenerationContext context) {
+        StringBuilder builder = new StringBuilder();
+        if (matchCase.pattern() instanceof ConstructorPattern pattern) {
+            GenerationContext.DataConstructorInfo ctorInfo = context.lookupConstructor(pattern.constructorName());
+            String javaCtor = ctorInfo == null ? capitalize(pattern.constructorName()) : ctorInfo.javaName();
+            String alias = context.reserveLetName(pattern.constructorName() + "Case");
+            builder.append("                if (").append(valueVar).append(" instanceof ").append(javaCtor).append(" ").append(alias).append(") {\n");
+            context.pushScope();
+            List<String> sanitized = context.registerPatternBindings(pattern.bindings());
+            List<GenerationContext.DataFieldInfo> fields = ctorInfo == null ? List.of() : ctorInfo.fields();
+            for (int i = 0; i < sanitized.size(); i++) {
+                String binding = pattern.bindings().get(i);
+                String localName = sanitized.get(i);
+                if (localName == null || "_".equals(binding)) {
+                    continue;
+                }
+                String fieldAccess;
+                if (i < fields.size()) {
+                    fieldAccess = alias + "." + fields.get(i).name();
+                } else {
+                    fieldAccess = alias + ".field" + (i + 1);
+                }
+                builder.append("                    var ").append(localName).append(" = ").append(fieldAccess).append(";\n");
+            }
+            String body = genExpr(matchCase.body(), context);
+            context.popScope();
+            builder.append("                    return ").append(body).append(";\n");
+            builder.append("                }\n");
+        } else if (matchCase.pattern() instanceof WildcardPattern) {
+            String body = genExpr(matchCase.body(), context);
+            builder.append("                {\n");
+            builder.append("                    return ").append(body).append(";\n");
+            builder.append("                }\n");
+        }
+        return builder.toString();
+    }
+
+    private static void renderDataTypes(StringBuilder sb, GenerationContext context) {
+        List<GenerationContext.DataTypeInfo> dataTypes = context.dataTypes();
+        if (dataTypes.isEmpty()) {
+            return;
+        }
+        for (GenerationContext.DataTypeInfo dataType : dataTypes) {
+            if (dataType.isRecordType()) {
+                GenerationContext.DataConstructorInfo ctor = dataType.constructors().get(0);
+                sb.append("    public record ").append(dataType.javaName()).append("(")
+                    .append(renderRecordComponents(ctor.fields()))
+                    .append(") {}\n\n");
+                continue;
+            }
+            String permits = dataType.constructors().stream()
+                .map(GenerationContext.DataConstructorInfo::javaName)
+                .collect(Collectors.joining(", "));
+            sb.append("    public sealed interface ").append(dataType.javaName())
+                .append(" permits ").append(permits).append(" {}\n\n");
+            for (GenerationContext.DataConstructorInfo constructor : dataType.constructors()) {
+                sb.append("    public static final class ").append(constructor.javaName())
+                    .append(" implements ").append(dataType.javaName()).append(" {\n");
+                for (GenerationContext.DataFieldInfo field : constructor.fields()) {
+                    sb.append("        public final ").append(field.javaType()).append(" ")
+                        .append(field.name()).append(";\n");
+                }
+                sb.append("        public ").append(constructor.javaName()).append("(")
+                    .append(renderConstructorParameters(constructor.fields()))
+                    .append(") {\n");
+                for (GenerationContext.DataFieldInfo field : constructor.fields()) {
+                    sb.append("            this.").append(field.name()).append(" = ").append(field.name()).append(";\n");
+                }
+                sb.append("        }\n");
+                sb.append("        @Override public String toString() {\n");
+                if (constructor.fields().isEmpty()) {
+                    sb.append("            return \"").append(constructor.javaName()).append("\";\n");
+                } else {
+                    sb.append("            var __sb = new StringBuilder(\"").append(constructor.javaName()).append("{\");\n");
+                    for (int i = 0; i < constructor.fields().size(); i++) {
+                        GenerationContext.DataFieldInfo field = constructor.fields().get(i);
+                        if (i > 0) {
+                            sb.append("            __sb.append(\", \");\n");
+                        }
+                        sb.append("            __sb.append(\"").append(field.name()).append("=\").append(").append(field.name()).append(");\n");
+                    }
+                    sb.append("            __sb.append('}');\n");
+                    sb.append("            return __sb.toString();\n");
+                }
+                sb.append("        }\n");
+                sb.append("    }\n\n");
+            }
+        }
+    }
+
+    private static String renderConstructorParameters(List<GenerationContext.DataFieldInfo> fields) {
+        if (fields.isEmpty()) {
+            return "";
+        }
+        return fields.stream()
+            .map(field -> field.javaType() + " " + field.name())
+            .collect(Collectors.joining(", "));
+    }
+
+    private static String renderRecordComponents(List<GenerationContext.DataFieldInfo> fields) {
+        return fields.stream()
+            .map(field -> field.javaType() + " " + field.name())
+            .collect(Collectors.joining(", "));
     }
 
     private static ResolvedType resolveType(Operation rhs, GenerationContext context) {
@@ -508,6 +729,9 @@ public final class Visitor {
         private final Deque<Scope> scopes = new ArrayDeque<>();
         private final Set<String> reservedNames = new HashSet<>();
         private final Map<String, Deque<String>> aliasOverrides = new HashMap<>();
+        private final Map<String, DataTypeInfo> dataTypes = new LinkedHashMap<>();
+        private final Map<String, DataConstructorInfo> constructors = new HashMap<>();
+        private final Map<String, String> typeNameMappings = new HashMap<>();
 
         GenerationContext() {
             scopes.push(new Scope());
@@ -530,6 +754,47 @@ public final class Visitor {
         void registerLet(String original, String sanitized, ResolvedType typeInfo) {
             Scope scope = scopes.peek();
             scope.put(original, sanitized, typeInfo);
+        }
+
+        void registerData(DataDeclaration declaration) {
+            String javaType = capitalize(declaration.name());
+            typeNameMappings.put(declaration.name(), javaType);
+            boolean recordStyle = declaration.constructors().size() == 1
+                && !declaration.constructors().get(0).fields().isEmpty()
+                && declaration.constructors().get(0).name().equals(declaration.name());
+            List<DataConstructorInfo> constructorInfos = new ArrayList<>();
+            for (DataConstructor constructor : declaration.constructors()) {
+                List<DataFieldInfo> fields = new ArrayList<>();
+                for (DataField field : constructor.fields()) {
+                    fields.add(new DataFieldInfo(field.name(), resolveDataFieldType(field.typeLiteral())));
+                }
+                String javaCtor = recordStyle ? javaType : capitalize(constructor.name());
+                DataConstructorInfo info = new DataConstructorInfo(constructor.name(), javaCtor, javaType, fields, recordStyle);
+                constructorInfos.add(info);
+                constructors.put(constructor.name(), info);
+            }
+            dataTypes.put(declaration.name(), new DataTypeInfo(declaration.name(), javaType, constructorInfos, recordStyle));
+        }
+
+        List<DataTypeInfo> dataTypes() {
+            return new ArrayList<>(dataTypes.values());
+        }
+
+        DataConstructorInfo lookupConstructor(String name) {
+            return constructors.get(name);
+        }
+
+        DataTypeInfo lookupDataType(String name) {
+            return dataTypes.get(name);
+        }
+
+        boolean hasBinding(String original) {
+            for (Scope scope : scopes) {
+                if (scope.contains(original)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         void pushScope() {
@@ -558,6 +823,21 @@ public final class Visitor {
             for (String param : params) {
                 String unique = makeUnique(param);
                 scope.put(param, unique, null);
+                sanitized.add(unique);
+            }
+            return sanitized;
+        }
+
+        List<String> registerPatternBindings(List<String> names) {
+            Scope scope = scopes.peek();
+            List<String> sanitized = new ArrayList<>(names.size());
+            for (String original : names) {
+                if ("_".equals(original)) {
+                    sanitized.add(null);
+                    continue;
+                }
+                String unique = makeUnique(original);
+                scope.put(original, unique, null);
                 sanitized.add(unique);
             }
             return sanitized;
@@ -608,6 +888,19 @@ public final class Visitor {
             return true;
         }
 
+        private String resolveDataFieldType(String literal) {
+            if (literal == null || literal.isBlank() || "any".equalsIgnoreCase(literal)) {
+                return "Object";
+            }
+            return switch (literal.toLowerCase()) {
+                case "int" -> "int";
+                case "float" -> "double";
+                case "string" -> "String";
+                case "boolean" -> "boolean";
+                default -> typeNameMappings.getOrDefault(literal, capitalize(literal));
+            };
+        }
+
         private static final class Scope {
             private final Map<String, ScopeEntry> mappings = new HashMap<>();
             private final Set<String> sanitizedNames = new HashSet<>();
@@ -622,6 +915,10 @@ public final class Visitor {
                 return entry == null ? null : entry.sanitized();
             }
 
+            boolean contains(String original) {
+                return mappings.containsKey(original);
+            }
+
             boolean containsSanitized(String name) {
                 return sanitizedNames.contains(name);
             }
@@ -633,6 +930,16 @@ public final class Visitor {
 
             private record ScopeEntry(String sanitized, ResolvedType type) {}
         }
+
+        private record DataTypeInfo(String originalName, String javaName, List<DataConstructorInfo> constructors, boolean recordType) {
+            boolean isRecordType() { return recordType; }
+        }
+
+        private record DataConstructorInfo(String originalName, String javaName, String ownerJavaType, List<DataFieldInfo> fields, boolean recordOwner) {
+            boolean isRecordOwner() { return recordOwner; }
+        }
+
+        private record DataFieldInfo(String name, String javaType) { }
     }
 
     private static String escapeJavaString(String raw) {
@@ -710,6 +1017,9 @@ public final class Visitor {
         }
 
         private Statement optimizeStatement(Statement stmt, LambdaContext lambdaCtx) {
+            if (stmt instanceof DataDeclaration) {
+                return stmt;
+            }
             if (stmt instanceof LetStatement let) {
                 Operation value = optimizeOperation(let.value(), new LambdaContext(null));
                 return new LetStatement(let.name(), value, let.comment());
@@ -764,6 +1074,22 @@ public final class Visitor {
                 Operation elseExpr = optimizeOperation(ternary.elseExpr(), lambdaCtx);
                 Operation rewrittenCond = tryRewriteCond(cond, thenExpr, elseExpr, lambdaCtx);
                 return new Ternary(rewrittenCond, thenExpr, elseExpr);
+            }
+            if (op instanceof DataConstructorCall ctorCall) {
+                List<Operation> args = new ArrayList<>(ctorCall.arguments().size());
+                for (Operation argument : ctorCall.arguments()) {
+                    args.add(optimizeOperation(argument, lambdaCtx));
+                }
+                return new DataConstructorCall(ctorCall.name(), args);
+            }
+            if (op instanceof Match match) {
+                Operation target = optimizeOperation(match.target(), lambdaCtx);
+                List<MatchCase> cases = new ArrayList<>(match.cases().size());
+                for (MatchCase matchCase : match.cases()) {
+                    Operation body = optimizeOperation(matchCase.body(), lambdaCtx);
+                    cases.add(new MatchCase(matchCase.pattern(), body));
+                }
+                return new Match(target, cases);
             }
             return op;
         }

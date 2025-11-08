@@ -54,6 +54,18 @@ public interface ExprListener extends ParseTreeListener {
 	 */
 	void exitPrintStat(ExprParser.PrintStatContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code dataStat}
+	 * labeled alternative in {@link ExprParser#stat}.
+	 * @param ctx the parse tree
+	 */
+	void enterDataStat(ExprParser.DataStatContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code dataStat}
+	 * labeled alternative in {@link ExprParser#stat}.
+	 * @param ctx the parse tree
+	 */
+	void exitDataStat(ExprParser.DataStatContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code exprStat}
 	 * labeled alternative in {@link ExprParser#stat}.
 	 * @param ctx the parse tree
@@ -77,6 +89,66 @@ public interface ExprListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitCommentStat(ExprParser.CommentStatContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ExprParser#dataBlock}.
+	 * @param ctx the parse tree
+	 */
+	void enterDataBlock(ExprParser.DataBlockContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#dataBlock}.
+	 * @param ctx the parse tree
+	 */
+	void exitDataBlock(ExprParser.DataBlockContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ExprParser#constructorList}.
+	 * @param ctx the parse tree
+	 */
+	void enterConstructorList(ExprParser.ConstructorListContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#constructorList}.
+	 * @param ctx the parse tree
+	 */
+	void exitConstructorList(ExprParser.ConstructorListContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ExprParser#dataConstructor}.
+	 * @param ctx the parse tree
+	 */
+	void enterDataConstructor(ExprParser.DataConstructorContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#dataConstructor}.
+	 * @param ctx the parse tree
+	 */
+	void exitDataConstructor(ExprParser.DataConstructorContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ExprParser#dataFieldList}.
+	 * @param ctx the parse tree
+	 */
+	void enterDataFieldList(ExprParser.DataFieldListContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#dataFieldList}.
+	 * @param ctx the parse tree
+	 */
+	void exitDataFieldList(ExprParser.DataFieldListContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ExprParser#dataField}.
+	 * @param ctx the parse tree
+	 */
+	void enterDataField(ExprParser.DataFieldContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#dataField}.
+	 * @param ctx the parse tree
+	 */
+	void exitDataField(ExprParser.DataFieldContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ExprParser#typeRef}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeRef(ExprParser.TypeRefContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#typeRef}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeRef(ExprParser.TypeRefContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link ExprParser#paramDeclList}.
 	 * @param ctx the parse tree
@@ -130,6 +202,18 @@ public interface ExprListener extends ParseTreeListener {
 	 */
 	void exitCall(ExprParser.CallContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code ctorCall}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterCtorCall(ExprParser.CtorCallContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code ctorCall}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitCtorCall(ExprParser.CtorCallContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code MulDiv}
 	 * labeled alternative in {@link ExprParser#expr}.
 	 * @param ctx the parse tree
@@ -177,6 +261,18 @@ public interface ExprListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitParens(ExprParser.ParensContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code matchExpr}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterMatchExpr(ExprParser.MatchExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code matchExpr}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitMatchExpr(ExprParser.MatchExprContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code IdRef}
 	 * labeled alternative in {@link ExprParser#expr}.
@@ -297,6 +393,60 @@ public interface ExprListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitLambda(ExprParser.LambdaContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ExprParser#matchCase}.
+	 * @param ctx the parse tree
+	 */
+	void enterMatchCase(ExprParser.MatchCaseContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#matchCase}.
+	 * @param ctx the parse tree
+	 */
+	void exitMatchCase(ExprParser.MatchCaseContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code wildcardPattern}
+	 * labeled alternative in {@link ExprParser#pattern}.
+	 * @param ctx the parse tree
+	 */
+	void enterWildcardPattern(ExprParser.WildcardPatternContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code wildcardPattern}
+	 * labeled alternative in {@link ExprParser#pattern}.
+	 * @param ctx the parse tree
+	 */
+	void exitWildcardPattern(ExprParser.WildcardPatternContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code constructorPattern}
+	 * labeled alternative in {@link ExprParser#pattern}.
+	 * @param ctx the parse tree
+	 */
+	void enterConstructorPattern(ExprParser.ConstructorPatternContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code constructorPattern}
+	 * labeled alternative in {@link ExprParser#pattern}.
+	 * @param ctx the parse tree
+	 */
+	void exitConstructorPattern(ExprParser.ConstructorPatternContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ExprParser#patternParamList}.
+	 * @param ctx the parse tree
+	 */
+	void enterPatternParamList(ExprParser.PatternParamListContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#patternParamList}.
+	 * @param ctx the parse tree
+	 */
+	void exitPatternParamList(ExprParser.PatternParamListContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ExprParser#patternParam}.
+	 * @param ctx the parse tree
+	 */
+	void enterPatternParam(ExprParser.PatternParamContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#patternParam}.
+	 * @param ctx the parse tree
+	 */
+	void exitPatternParam(ExprParser.PatternParamContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link ExprParser#argumentList}.
 	 * @param ctx the parse tree

@@ -13,8 +13,38 @@ stat
     : 'fun' ID '(' paramDeclList? ')' ':' type '=' expr comment? # funStat
     | 'let' ID '=' expr comment?      # letStat
     | 'print' expr comment?           # printStat
+    | 'data' ID dataBlock comment?    # dataStat
     | expr comment?                   # exprStat
     | comment                         # commentStat
+    ;
+
+dataBlock
+    : ('='?) '{' NEWLINE* constructorList? NEWLINE* '}'
+    ;
+
+constructorList
+    : dataConstructor (NEWLINE* ',' NEWLINE* dataConstructor)* NEWLINE* ','?
+    ;
+
+dataConstructor
+    : ID ( '(' dataFieldList? ')' | ':' typeRef )?
+    ;
+
+dataFieldList
+    : dataField (NEWLINE* ',' NEWLINE* dataField)*
+    ;
+
+dataField
+    : ID (':' typeRef)?
+    ;
+
+typeRef
+    : 'int'
+    | 'float'
+    | 'string'
+    | 'boolean'
+    | 'any'
+    | ID
     ;
 
 paramDeclList
@@ -39,6 +69,7 @@ comment
 expr
     : '-' expr                        # unaryMinus
     | expr '**' expr                  # power
+    | '^' ID '(' argumentList? ')'    # ctorCall
     | expr '(' argumentList? ')'      # Call
     | expr op=('*'|'/') expr          # MulDiv
     | expr op=('+'|'-') expr          # AddSub
@@ -46,12 +77,31 @@ expr
     | expr op=('=='|'!=') expr        # Equality
     | expr '?' expr ':' expr          # Ternary
     | params '->' expr                # Lambda
+    | 'match' expr 'with' matchCase ('|' matchCase)* # matchExpr
     | FLOAT_E                         # EulerFloat
     | FLOAT                           # Float
     | INT                             # Int
     | STRING                          # StringLit
     | ID                              # IdRef
     | '(' expr ')'                    # Parens
+    ;
+
+matchCase
+    : pattern '->' expr
+    ;
+
+pattern
+    : '_'                             # wildcardPattern
+    | ID ('(' patternParamList? ')')? # constructorPattern
+    ;
+
+patternParamList
+    : patternParam (',' patternParam)*
+    ;
+
+patternParam
+    : '_'
+    | ID
     ;
 
 argumentList
