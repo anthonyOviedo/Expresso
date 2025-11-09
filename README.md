@@ -58,13 +58,6 @@ mvn -B -DskipTests clean package
 
 # 2. Generar Ejecutable de Expresso en carpeta Dist
 
-#    2.1. Generar Runtime  
-"%JAVA_HOME%\bin\jlink.exe" ^
-  --module-path "%JAVA_HOME%\jmods" ^
-  --add-modules java.base,java.logging,java.scripting,java.desktop,jdk.compiler ^
-  --output "runtime"
-
-#    2.2. Generar Ejecutable en carpeta Dist
 "%JAVA_HOME%\bin\jpackage.exe" ^
   --type app-image ^
   --name expressor ^
@@ -72,10 +65,8 @@ mvn -B -DskipTests clean package
   --main-jar "expresso-cli-0.1.0.jar" ^
   --main-class "com.diezam04.expresso.adapters.cli.Cli" ^
   --app-version 3.1 ^
-  --runtime-image "runtime" ^
   --win-console ^
   --dest "dist"
-
 
 
 
@@ -96,13 +87,6 @@ mvn -B -DskipTests clean package
 
 # 2. Generar Ejecutable de Expresso
 
-#    2.1. Generar Runtime  
-& "$env:JAVA_HOME\bin\jlink.exe" `
-  --module-path "$env:JAVA_HOME\jmods" `
-  --add-modules java.base,java.logging,java.scripting,java.desktop,jdk.compiler `
-  --output ".\runtime"
-
-#    2.2. Generar Ejecutable en carpeta Dist
 & "$env:JAVA_HOME\bin\jpackage.exe" `
   --type app-image `
   --name "expressor" `
@@ -110,14 +94,12 @@ mvn -B -DskipTests clean package
   --main-jar "expresso-cli-0.1.0.jar" `
   --main-class "com.diezam04.expresso.adapters.cli.Cli" `
   --app-version "3.1" `
-  --runtime-image ".\runtime" `
   --win-console `
   --dest "dist"
 
 
+
 ```
-
-
 
 El ejecutable generado puede ser invocado con ".\dist\expressor\expressor" desde la raíz del proyecto.
 
