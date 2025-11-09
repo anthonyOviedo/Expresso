@@ -10,7 +10,7 @@ prog
     ;
 
 stat
-    : 'fun' ID '(' paramDeclList? ')' ':' typeRef '=' NEWLINE* expr comment? # funStat
+    : 'fun' ID '(' paramDeclList? ')' (':' typeRef)? '=' NEWLINE* expr comment? # funStat
     | 'let' ID (':' typeRef)? '=' NEWLINE* expr comment?      # letStat
     | PRINT expr comment?           # printStat
     | 'data' ID dataBlock comment?    # dataStat
@@ -38,7 +38,17 @@ dataField
     : ID (':' typeRef)?
     ;
 
+// Types can be simple (int, string, ID) or functional: T -> R, (A, B) -> R
 typeRef
+    : functionType
+    | typeAtom
+    ;
+
+functionType
+    : typeAtom '->' typeRef
+    ;
+
+typeAtom
     : 'int'
     | 'float'
     | 'double'
@@ -46,6 +56,7 @@ typeRef
     | 'boolean'
     | 'any'
     | ID
+    | '(' typeRef (',' typeRef)+ ')'
     ;
 
 paramDeclList
@@ -72,15 +83,16 @@ expr
     | expr '**' expr                  # power
     | '^' ID '(' argumentList? ')'    # ctorCall
     | expr '(' argumentList? ')'      # Call
+    | expr ':' typeRef                # TypeCast
+    | PRINT expr                      # printExpr
     | expr op=('*'|'/') expr          # MulDiv
     | expr op=('+'|'-') expr          # AddSub
     | expr op=('>='|'<='|'>'|'<') expr # Relation
     | expr op=('=='|'!=') expr        # Equality
     | expr '?' expr ':' expr          # Ternary
     | params '->' expr                # Lambda
-    | expr ':' typeRef                # TypeCast
-    | 'match' expr (
-        'with' matchCase ('|' matchCase)*
+    | 'match' expr NEWLINE*
+        ('with' NEWLINE* matchCase (NEWLINE* '|' NEWLINE* matchCase)*
         | '{' NEWLINE* matchCase (matchCaseSeparator matchCase)* matchCaseSeparator? '}'
       ) # matchExpr
     | FLOAT_E                         # EulerFloat
@@ -145,8 +157,8 @@ FLOAT
     ;
 INT: DIGITS;
 STRING: '"' ( '\\' [btnr"\\] | ~["\\\r\n] )* '"';
-NEWLINE: ('\r'? '\n');
-WS: [ \t\r]+ -> skip;
+NEWLINE: ('\r'? '\n' | '\r');
+WS: [ \t]+ -> skip;
 LINE_COMMENT: '//' ~[\r\n]*;
 BLOCK_COMMENT: '/*' .*? '*/';
 

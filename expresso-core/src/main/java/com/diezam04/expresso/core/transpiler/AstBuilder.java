@@ -66,10 +66,13 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
                 .map(AstBuilder::toParameter)
                 .collect(Collectors.toList());
         String comment = ctx.comment() != null ? ctx.comment().getText() : null;
+        ValueType returnType = ctx.typeRef() == null ? ValueType.ANY : parseValueType(ctx.typeRef());
+        String returnLiteral = ctx.typeRef() == null ? null : ctx.typeRef().getText();
         return new FunStatement(
             ctx.ID().getText(),
             parameters,
-            parseValueType(ctx.typeRef()),
+            returnType,
+            returnLiteral,
             visitOperation(ctx.expr()),
             comment);
     }
@@ -138,7 +141,13 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
 
     @Override
     public Object visitParens(ExprParser.ParensContext ctx) {
-        return visit(ctx.expr());
+        return visitOperation(ctx.expr());
+    }
+
+    @Override
+    public Object visitPrintExpr(ExprParser.PrintExprContext ctx) {
+        Operation arg = visitOperation(ctx.expr());
+        return new Call(new VarRef("print"), List.of(arg));
     }
 
     @Override
@@ -241,11 +250,12 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
 
     private static LambdaParam toLambdaParam(ExprParser.LambdaParamContext ctx) {
         ValueType type = ctx.typeRef() == null ? null : parseValueType(ctx.typeRef());
-        return new LambdaParam(ctx.ID().getText(), type);
+        String literal = ctx.typeRef() == null ? null : ctx.typeRef().getText();
+        return new LambdaParam(ctx.ID().getText(), type, literal);
     }
 
     private static Parameter toParameter(ExprParser.ParamDeclContext ctx) {
-        return new Parameter(ctx.ID().getText(), parseValueType(ctx.typeRef()));
+        return new Parameter(ctx.ID().getText(), parseValueType(ctx.typeRef()), ctx.typeRef().getText());
     }
 
     private static DataConstructor toDataConstructor(ExprParser.DataConstructorContext ctx) {
@@ -297,7 +307,13 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
         }
         boolean hasFieldEntry = specs.stream().anyMatch(ConstructorSpec::isRecordField);
         if (hasFieldEntry) {
-            throw new IllegalArgumentException("Cannot mix record-style fields with constructor variants in data type '" + typeName + "'");
+            // If at least one entry looks like a record-field, interpret bare IDs as fields of type 'any'
+            List<DataField> fields = specs.stream()
+                .map(spec -> spec.isRecordField()
+                        ? new DataField(spec.name(), spec.fieldType())
+                        : new DataField(spec.name(), null))
+                .collect(Collectors.toList());
+            return List.of(new DataConstructor(typeName, fields));
         }
         return specs.stream()
             .map(spec -> new DataConstructor(spec.name(), spec.parameters()))
@@ -308,6 +324,13 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
         String name = ctx.ID().getText();
         boolean hasParentheses = ctx.getChildCount() >= 3
             && "(".equals(ctx.getChild(1).getText());
+
+        // Cases:
+        // 1) Variant with params:   Cons(car:any, cdr:list)
+        // 2) Variant with zero params: Nil
+        // 3) Record-style field entry: fieldName: typeRef
+
+        // Variant (with or without params)
         if (ctx.dataFieldList() != null || hasParentheses) {
             List<DataField> params = ctx.dataFieldList() == null
                 ? List.of()
@@ -316,8 +339,15 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
                     .collect(Collectors.toList());
             return ConstructorSpec.variant(name, params);
         }
-        String typeLiteral = ctx.typeRef() == null ? null : ctx.typeRef().getText();
-        return ConstructorSpec.recordField(name, typeLiteral);
+
+        // Record-style field entry only when an explicit typeRef is provided via ':'
+        if (ctx.typeRef() != null) {
+            String typeLiteral = ctx.typeRef().getText();
+            return ConstructorSpec.recordField(name, typeLiteral);
+        }
+
+        // Otherwise it's a zero-arg variant (e.g., Nil)
+        return ConstructorSpec.variant(name, List.of());
     }
 
     private static final class ConstructorSpec {

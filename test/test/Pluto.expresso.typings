@@ -1,0 +1,9 @@
+# Pluto.expresso
+nil: ~
+list_666: ~
+list_777: ~
+list_888: ~
+myList: ~
+list: Nil|Cons
+Nil: void ^ list
+Cons: any, list ^ list

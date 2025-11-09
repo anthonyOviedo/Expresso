@@ -150,6 +150,26 @@ public interface ExprListener extends ParseTreeListener {
 	 */
 	void exitTypeRef(ExprParser.TypeRefContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link ExprParser#functionType}.
+	 * @param ctx the parse tree
+	 */
+	void enterFunctionType(ExprParser.FunctionTypeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#functionType}.
+	 * @param ctx the parse tree
+	 */
+	void exitFunctionType(ExprParser.FunctionTypeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ExprParser#typeAtom}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeAtom(ExprParser.TypeAtomContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ExprParser#typeAtom}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeAtom(ExprParser.TypeAtomContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link ExprParser#paramDeclList}.
 	 * @param ctx the parse tree
 	 */
@@ -405,6 +425,18 @@ public interface ExprListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitLambda(ExprParser.LambdaContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code printExpr}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterPrintExpr(ExprParser.PrintExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code printExpr}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitPrintExpr(ExprParser.PrintExprContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link ExprParser#matchCase}.
 	 * @param ctx the parse tree

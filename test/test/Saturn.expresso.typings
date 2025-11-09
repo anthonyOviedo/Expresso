@@ -1,0 +1,14 @@
+# Saturn.expresso
+first: ~
+rest: ~
+append_as_lambda: ~
+double_list: ~
+nil: ~
+list_666: ~
+list_777: ~
+list_888: ~
+myList: ~
+myList_copy: ~
+list: Nil|Cons
+Nil: void ^ list
+Cons: any, list ^ list

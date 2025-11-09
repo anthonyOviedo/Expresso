@@ -95,6 +95,18 @@ public interface ExprVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTypeRef(ExprParser.TypeRefContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link ExprParser#functionType}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionType(ExprParser.FunctionTypeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ExprParser#typeAtom}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeAtom(ExprParser.TypeAtomContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link ExprParser#paramDeclList}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -244,6 +256,13 @@ public interface ExprVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitLambda(ExprParser.LambdaContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code printExpr}
+	 * labeled alternative in {@link ExprParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPrintExpr(ExprParser.PrintExprContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ExprParser#matchCase}.
 	 * @param ctx the parse tree

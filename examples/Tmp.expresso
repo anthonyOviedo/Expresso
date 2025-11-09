@@ -9,19 +9,14 @@
  
 */
 
-data list = {
-	Nil,
-	Cons(car:any, cdr:list)
-}
-
 data shape = {
     Circle(radius:float),
     Rectangle(length:float, width:float)
 }
 
-let shape_type = s:shape -> match a with 
-         Circle(r) => "its a Circle"
-        | Rectangle(l, w) => "its a Rectangle"
+let shape_type = s:shape -> match s with 
+         Circle(r) -> "its a Circle"
+        | Rectangle(l, w) -> "its a Rectangle"
     
 let c = ^Circle(5.0)
 let r = ^Rectangle(3.0, 4.0)
@@ -29,6 +24,6 @@ let r = ^Rectangle(3.0, 4.0)
 print(c)
 print(r)
 
-print(shape_type(c))
-print(shape_type(r))
+print(shape_type(c)) // >>"its a Circle"
+print(shape_type(r)) // >>"its a Rectangle"
 

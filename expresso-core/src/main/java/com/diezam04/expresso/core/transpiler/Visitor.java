@@ -127,9 +127,26 @@ public final class Visitor {
     }
 
     private static List<String> genFunStatement(FunStatement funStatement, GenerationContext context) {
+        List<ValueType> paramTypes = funStatement.parameters().stream().map(Parameter::type).collect(Collectors.toList());
+        List<String> paramLiterals = funStatement.parameters().stream().map(Parameter::typeLiteral).collect(Collectors.toList());
+        // Attempt to infer return type when not explicitly declared
+        ValueType declaredReturn = funStatement.returnType();
+        ValueType inferredReturn = declaredReturn;
+        if (funStatement.returnTypeLiteral() == null) {
+            Map<String, ValueType> local = new HashMap<>();
+            for (Parameter p : funStatement.parameters()) {
+                local.put(p.name(), defaultType(p.type()));
+            }
+            ValueType cand = inferOperationType(funStatement.body(), local, context);
+            if (cand != null) {
+                inferredReturn = cand;
+            }
+        }
         ResolvedType resolvedType = buildFunctionalType(
-            funStatement.parameters().stream().map(Parameter::type).collect(Collectors.toList()),
-            funStatement.returnType(),
+            paramTypes,
+            inferredReturn,
+            paramLiterals,
+            funStatement.returnTypeLiteral(),
             context);
         String sanitizedName = context.reserveLetName(funStatement.name());
         context.registerLet(funStatement.name(), sanitizedName, resolvedType);
@@ -138,7 +155,8 @@ public final class Visitor {
         return List.of(appendInlineComment(base, funStatement.comment()));
     }
 
-    private static ResolvedType buildFunctionalType(List<ValueType> parameterTypes, ValueType returnType, GenerationContext context) {
+    private static ResolvedType buildFunctionalType(List<ValueType> parameterTypes, ValueType returnType,
+            List<String> paramTypeLiterals, String returnTypeLiteral, GenerationContext context) {
         List<ValueType> normalizedParams = new ArrayList<>(parameterTypes.size());
         for (ValueType param : parameterTypes) {
             normalizedParams.add(defaultType(param));
@@ -146,7 +164,20 @@ public final class Visitor {
         ValueType normalizedReturn = defaultType(returnType);
         FunctionalInterfaceDescriptor descriptor = selectDescriptor(normalizedParams, normalizedReturn);
         context.requireImport(descriptor.qualifiedName());
-        String declaration = descriptor.renderDeclaration(normalizedParams, normalizedReturn);
+        String declaration;
+        if (descriptor.usesGenerics()) {
+            List<String> genericTypes = new ArrayList<>();
+            for (int i = 0; i < normalizedParams.size(); i++) {
+                String literal = (paramTypeLiterals != null && i < paramTypeLiterals.size()) ? paramTypeLiterals.get(i) : null;
+                genericTypes.add(context.resolveDeclaredTypeForGenerics(literal, normalizedParams.get(i)));
+            }
+            if (descriptor.includeReturnType()) {
+                genericTypes.add(context.resolveDeclaredTypeForGenerics(returnTypeLiteral, normalizedReturn));
+            }
+            declaration = descriptor.simpleName() + "<" + String.join(", ", genericTypes) + ">";
+        } else {
+            declaration = descriptor.simpleName();
+        }
         return new ResolvedType(declaration, descriptor, normalizedParams, normalizedReturn);
     }
 
@@ -156,7 +187,8 @@ public final class Visitor {
             .collect(Collectors.toList());
 
         context.pushScope();
-        List<String> sanitizedParams = context.registerLambdaParams(originalParams);
+        List<ValueType> originalTypes = funStatement.parameters().stream().map(Parameter::type).map(Visitor::defaultType).collect(Collectors.toList());
+        List<String> sanitizedParams = context.registerLambdaParamsWithTypes(originalParams, originalTypes);
         context.pushAlias(funStatement.name(), "this");
         String body = genExpr(funStatement.body(), context);
         context.popAlias(funStatement.name());
@@ -164,22 +196,33 @@ public final class Visitor {
 
         List<String> signatureParts = new ArrayList<>();
         FunctionalInterfaceDescriptor descriptor = resolvedType.descriptor();
-        List<ValueType> parameterTypes = resolvedType.parameterTypes();
-        List<String> methodParamTypes = descriptor.methodParameterTypes(parameterTypes);
+        List<String> methodParamTypes = context.methodParameterTypesFor(descriptor, funStatement.parameters());
         for (int i = 0; i < sanitizedParams.size(); i++) {
             signatureParts.add(methodParamTypes.get(i) + " " + sanitizedParams.get(i));
         }
 
         StringBuilder builder = new StringBuilder();
         builder.append("new ").append(resolvedType.declaration()).append("() {\n");
+        String returnTypeRef;
+        if (descriptor.invocationReturnsVoid()) {
+            returnTypeRef = "void";
+        } else if (descriptor.usesGenerics() && descriptor.includeReturnType()) {
+            returnTypeRef = context.resolveDeclaredTypeForGenerics(funStatement.returnTypeLiteral(), resolvedType.returnType());
+        } else {
+            returnTypeRef = descriptor.methodReturnType(resolvedType.returnType());
+        }
         builder.append("            @Override public ")
-            .append(descriptor.methodReturnType(resolvedType.returnType()))
+            .append(returnTypeRef)
             .append(" ")
             .append(descriptor.invocationMethod())
             .append("(")
             .append(String.join(", ", signatureParts))
             .append(") {\n");
-        builder.append("                return ").append(body).append(";\n");
+        if (descriptor.invocationReturnsVoid()) {
+            builder.append("                ").append(body).append(";\n");
+        } else {
+            builder.append("                return ").append(body).append(";\n");
+        }
         builder.append("            }\n");
         builder.append("        }");
         return builder.toString();
@@ -196,6 +239,9 @@ public final class Visitor {
             return "\"" + escapeJavaString(text.value()) + "\"";
         }
         if (expr instanceof VarRef var) {
+            if ("none".equalsIgnoreCase(var.name())) {
+                return "null";
+            }
             if (!context.hasBinding(var.name())) {
                 GenerationContext.DataConstructorInfo ctorInfo = context.lookupConstructor(var.name());
                 if (ctorInfo != null && ctorInfo.fields().isEmpty()) {
@@ -209,20 +255,50 @@ public final class Visitor {
             return unary.operator().symbol() + "(" + operand + ")";
         }
         if (expr instanceof BinaryOper binary) {
-            String left = genExpr(binary.left(), context);
-            String right = genExpr(binary.right(), context);
-            return switch (binary.operator().symbol()) {
-                case "**" -> "(int) Math.pow(" + left + ", " + right + ")";
-                case "=" -> {
+            String symbol = binary.operator().symbol();
+            String leftExpr = genExpr(binary.left(), context);
+            String rightExpr = genExpr(binary.right(), context);
+            switch (symbol) {
+                case "**": {
+                    ValueType lt = inferOperationType(binary.left(), Collections.emptyMap(), context);
+                    ValueType rt = inferOperationType(binary.right(), Collections.emptyMap(), context);
+                    boolean bothInt = (lt == ValueType.INT) && (rt == ValueType.INT);
+                    String pow = "Math.pow(" + leftExpr + ", " + rightExpr + ")";
+                    return bothInt ? "(int) " + pow : pow;
+                }
+                case "=":
                     if (binary.left() instanceof VarRef variable) {
                         String target = context.resolveName(variable.name());
                         String assignment = target + " = " + genExpr(binary.right(), context);
-                        yield assignment;
+                        return assignment;
                     }
-                    yield "(" + left + " = " + right + ")";
-                }
-                default -> "(" + left + " " + binary.operator().symbol() + " " + right + ")";
-            };
+                    return "(" + leftExpr + " = " + rightExpr + ")";
+                default:
+                    // Handle numeric promotions and casts when mixing Objects with numbers.
+                    if ("+".equals(symbol)) {
+                        ValueType lt = inferOperationType(binary.left(), Collections.emptyMap(), context);
+                        ValueType rt = inferOperationType(binary.right(), Collections.emptyMap(), context);
+                        if (lt == ValueType.STRING || rt == ValueType.STRING) {
+                            return "(" + leftExpr + " + " + rightExpr + ")";
+                        }
+                    }
+                    if (isNumericOperator(symbol)) {
+                        ValueType lt = inferOperationType(binary.left(), Collections.emptyMap(), context);
+                        ValueType rt = inferOperationType(binary.right(), Collections.emptyMap(), context);
+                        ValueType target;
+                        if (lt == ValueType.FLOAT || rt == ValueType.FLOAT) {
+                            target = ValueType.FLOAT;
+                        } else if (lt == ValueType.INT || rt == ValueType.INT) {
+                            target = ValueType.INT;
+                        } else {
+                            target = ValueType.FLOAT;
+                        }
+                        String l = ensureNumericType(leftExpr, lt, target);
+                        String r = ensureNumericType(rightExpr, rt, target);
+                        return "(" + l + " " + symbol + " " + r + ")";
+                    }
+                    return "(" + leftExpr + " " + symbol + " " + rightExpr + ")";
+            }
         }
         if (expr instanceof Ternary ternary) {
             String condition = renderCondition(ternary.cond(), context);
@@ -233,7 +309,11 @@ public final class Visitor {
         if (expr instanceof Lambda lambda) {
             context.pushScope();
             List<String> paramNames = lambdaParamNames(lambda.params());
-            List<String> params = context.registerLambdaParams(paramNames);
+            List<ValueType> paramTypes = new ArrayList<>(lambda.params().size());
+            for (LambdaParam p : lambda.params()) {
+                paramTypes.add(defaultType(p.type()));
+            }
+            List<String> params = context.registerLambdaParamsWithTypes(paramNames, paramTypes);
             String renderedParams = params.isEmpty()
                 ? "()"
                 : "(" + String.join(", ", params) + ")";
@@ -242,21 +322,42 @@ public final class Visitor {
             return renderedParams + " -> " + body;
         }
         if (expr instanceof Call call) {
+            // Special-case built-in print used as expression
+            if (call.callee() instanceof VarRef var && "print".equals(var.name())) {
+                String args = call.arguments().stream().map(a -> genExpr(a, context)).collect(Collectors.joining(", "));
+                return "print(" + args + ")";
+            }
             String callee = genExpr(call.callee(), context);
             String method = call.arguments().isEmpty() ? "get" : "apply";
+            List<String> renderedArgs;
             if (call.callee() instanceof VarRef var) {
                 ResolvedType info = context.lookupType(var.name());
                 if (info != null && info.descriptor() != null) {
                     method = info.descriptor().invocationMethod();
                 }
+                if (!call.arguments().isEmpty() && info != null && info.parameterTypes() != null && !info.parameterTypes().isEmpty()) {
+                    renderedArgs = new ArrayList<>(call.arguments().size());
+                    for (int i = 0; i < call.arguments().size(); i++) {
+                        String argExpr = genExpr(call.arguments().get(i), context);
+                        ValueType expected = i < info.parameterTypes().size() ? info.parameterTypes().get(i) : null;
+                        if (expected == ValueType.FLOAT) {
+                            renderedArgs.add("((double) (" + argExpr + "))");
+                        } else if (expected == ValueType.INT) {
+                            renderedArgs.add("((int) (" + argExpr + "))");
+                        } else {
+                            renderedArgs.add(argExpr);
+                        }
+                    }
+                } else {
+                    renderedArgs = call.arguments().stream().map(a -> genExpr(a, context)).collect(Collectors.toList());
+                }
+            } else {
+                renderedArgs = call.arguments().stream().map(a -> genExpr(a, context)).collect(Collectors.toList());
             }
             if (call.arguments().isEmpty()) {
                 return callee + "." + method + "()";
             }
-            String args = call.arguments().stream()
-                .map(arg -> genExpr(arg, context))
-                .collect(Collectors.joining(", "));
-            return callee + "." + method + "(" + args + ")";
+            return callee + "." + method + "(" + String.join(", ", renderedArgs) + ")";
         }
         if (expr instanceof DataConstructorCall ctorCall) {
             return renderConstructorCall(ctorCall, context);
@@ -298,6 +399,14 @@ public final class Visitor {
         if (info == null) {
             GenerationContext.DataTypeInfo dataType = context.lookupDataType(call.name());
             if (dataType != null) {
+                // Record-style data type: call ^Type(args...) directly
+                if (dataType.isRecordType()) {
+                    String args = call.arguments().stream()
+                        .map(arg -> genExpr(arg, context))
+                        .collect(Collectors.joining(", "));
+                    return "new " + dataType.javaName() + "(" + args + ")";
+                }
+                // sum-type: first argument must be a variant reference
                 if (call.arguments().isEmpty()) {
                     throw new IllegalArgumentException("Constructor for data type '" + call.name() + "' requires a variant name");
                 }
@@ -315,12 +424,45 @@ public final class Visitor {
         }
         String javaCtor = info.javaName();
         if (info.fields().isEmpty() && "Nil".equalsIgnoreCase(info.originalName())) {
-            return "null";
+            return "new " + javaCtor + "()";
         }
-        String args = call.arguments().stream()
-            .map(arg -> genExpr(arg, context))
-            .collect(Collectors.joining(", "));
+        List<String> renderedArgs = new ArrayList<>();
+        for (int i = 0; i < call.arguments().size(); i++) {
+            String argExpr = genExpr(call.arguments().get(i), context);
+            String expectedType = i < info.fields().size() ? info.fields().get(i).javaType() : null;
+            if (expectedType != null && needsCast(expectedType)) {
+                renderedArgs.add("((" + expectedType + ") (" + argExpr + "))");
+            } else {
+                renderedArgs.add(argExpr);
+            }
+        }
+        String args = String.join(", ", renderedArgs);
         return "new " + javaCtor + "(" + args + ")";
+    }
+
+    private static boolean needsCast(String javaType) {
+        if (javaType == null) return false;
+        return !("int".equals(javaType) || "double".equals(javaType) || "boolean".equals(javaType) || "Object".equals(javaType));
+    }
+
+    private static boolean isNumericOperator(String symbol) {
+        return "+".equals(symbol) || "-".equals(symbol) || "*".equals(symbol) || "/".equals(symbol);
+    }
+
+    private static String ensureNumericType(String expr, ValueType current, ValueType target) {
+        if (current == target) {
+            return expr;
+        }
+        if (current == null || current == ValueType.ANY) {
+            // Cast unknown to a primitive; Java will box if needed
+            return switch (target) {
+                case INT -> "((int) (" + expr + "))";
+                case FLOAT -> "((double) (" + expr + "))";
+                default -> expr;
+            };
+        }
+        // For mismatched numeric types, cast explicitly
+        return "((" + target.javaName() + ") (" + expr + "))";
     }
 
     private static String renderCast(TypeCast cast, GenerationContext context) {
@@ -361,10 +503,9 @@ public final class Visitor {
     }
 
     private static String renderMatch(Match match, GenerationContext context) {
-        String javaType = inferMatchJavaType(match, context);
         String targetExpr = genExpr(match.target(), context);
         StringBuilder builder = new StringBuilder();
-        builder.append("((").append(javaType).append(") (switch (").append(targetExpr).append(") {\n");
+        builder.append("(switch (").append(targetExpr).append(") {\n");
         boolean hasWildcard = false;
         for (MatchCase matchCase : match.cases()) {
             if (matchCase.pattern() instanceof WildcardPattern) {
@@ -373,9 +514,9 @@ public final class Visitor {
             builder.append(renderMatchCase(matchCase, context));
         }
         if (!hasWildcard) {
-            builder.append("                default -> throw new IllegalStateException(\"Non-exhaustive match\");\n");
+            builder.append("            default -> throw new IllegalStateException(\"Non-exhaustive match\");\n");
         }
-        builder.append("            }))");
+        builder.append("        })");
         return builder.toString();
     }
 
@@ -434,36 +575,30 @@ public final class Visitor {
         if (matchCase.pattern() instanceof ConstructorPattern pattern) {
             GenerationContext.DataConstructorInfo ctorInfo = context.lookupConstructor(pattern.constructorName());
             String javaCtor = ctorInfo == null ? capitalize(pattern.constructorName()) : ctorInfo.javaName();
-            String alias = context.reserveLetName(pattern.constructorName() + "Case");
-            builder.append("                case ").append(javaCtor).append(" ").append(alias).append(" -> {\n");
             context.pushScope();
             List<String> sanitized = context.registerPatternBindings(pattern.bindings());
-            List<GenerationContext.DataFieldInfo> fields = ctorInfo == null ? List.of() : ctorInfo.fields();
-            for (int i = 0; i < sanitized.size(); i++) {
-                String binding = pattern.bindings().get(i);
-                String localName = sanitized.get(i);
-                if (localName == null || "_".equals(binding)) {
-                    continue;
-                }
-                String fieldAccess;
-                if (i < fields.size()) {
-                    fieldAccess = alias + "." + fields.get(i).name() + "()";
-                } else {
-                    fieldAccess = alias + ".component" + (i + 1) + "()";
-                }
-                builder.append("                    var ").append(localName).append(" = ").append(fieldAccess).append(";\n");
-            }
+            String patternVars = buildPatternVars(sanitized);
+            builder.append("            case ").append(javaCtor).append("(").append(patternVars).append(") -> {\n");
             String body = genExpr(matchCase.body(), context);
             context.popScope();
-            builder.append("                    yield ").append(body).append(";\n");
-            builder.append("                }\n");
+            builder.append("                yield ").append(body).append(";\n");
+            builder.append("            }\n");
         } else if (matchCase.pattern() instanceof WildcardPattern) {
             String body = genExpr(matchCase.body(), context);
-            builder.append("                default -> {\n");
-            builder.append("                    yield ").append(body).append(";\n");
-            builder.append("                }\n");
+            builder.append("            default -> {\n");
+            builder.append("                yield ").append(body).append(";\n");
+            builder.append("            }\n");
         }
         return builder.toString();
+    }
+
+    private static String buildPatternVars(List<String> vars) {
+        if (vars.isEmpty()) {
+            return "";
+        }
+        return vars.stream()
+            .map(name -> name == null ? "_" : "var " + name)
+            .collect(Collectors.joining(", "));
     }
 
     private static void renderDataTypes(StringBuilder sb, GenerationContext context) {
@@ -511,6 +646,12 @@ public final class Visitor {
         if (rhs instanceof Lambda lambda) {
             return resolveLambdaType(lambda, context);
         }
+        if (rhs instanceof DataConstructorCall ctorCall) {
+            GenerationContext.DataConstructorInfo info = context.lookupConstructor(ctorCall.name());
+            if (info != null) {
+                return ResolvedType.scalar(info.ownerJavaType(), ValueType.ANY);
+            }
+        }
         if (rhs instanceof TypeCast cast) {
             return ResolvedType.scalar(cast.targetType().javaName(), cast.targetType());
         }
@@ -519,17 +660,19 @@ public final class Visitor {
 
     private static ResolvedType resolveLambdaType(Lambda lambda, GenerationContext context) {
         List<ValueType> paramTypes = new ArrayList<>(lambda.params().size());
+        List<String> paramLiterals = new ArrayList<>(lambda.params().size());
         Map<String, ValueType> localTypes = new HashMap<>();
         for (LambdaParam param : lambda.params()) {
             ValueType type = defaultType(param.type());
             paramTypes.add(type);
+            paramLiterals.add(param.typeLiteral());
             localTypes.put(param.name(), type);
         }
         ValueType returnType = inferOperationType(lambda.body(), localTypes, context);
         if (returnType == null) {
             returnType = ValueType.INT;
         }
-        return buildFunctionalType(paramTypes, returnType, context);
+        return buildFunctionalType(paramTypes, returnType, paramLiterals, null, context);
     }
 
     private static ValueType inferOperationType(Operation op, Map<String, ValueType> localTypes, GenerationContext context) {
@@ -582,6 +725,18 @@ public final class Visitor {
             ValueType thenType = inferOperationType(ternary.thenExpr(), localTypes, context);
             ValueType elseType = inferOperationType(ternary.elseExpr(), localTypes, context);
             return mostSpecific(thenType, elseType);
+        }
+        if (op instanceof Match match) {
+            ValueType result = null;
+            for (MatchCase matchCase : match.cases()) {
+                ValueType candidate = inferOperationType(matchCase.body(), localTypes, context);
+                if (result == null) {
+                    result = candidate;
+                } else if (candidate != null && result != candidate) {
+                    result = ValueType.ANY;
+                }
+            }
+            return result != null ? result : ValueType.ANY;
         }
         if (op instanceof Call call) {
             if (call.callee() instanceof VarRef var) {
@@ -942,6 +1097,66 @@ public final class Visitor {
             imports.add(fqcn);
         }
 
+        String resolveDeclaredTypeForGenerics(String literal, ValueType fallback) {
+            if (literal == null || literal.isBlank()) {
+                return fallback == null ? "Object" : fallback.boxedJavaName();
+            }
+            String trimmed = literal.replaceAll("\\s+", "");
+            int arrow = trimmed.indexOf("->");
+            if (arrow > 0) {
+                String left = trimmed.substring(0, arrow);
+                String right = trimmed.substring(arrow + 2);
+                String ret = resolveDeclaredTypeForGenerics(right, ValueType.ANY);
+                if (left.startsWith("(") && left.endsWith(")")) {
+                    String inner = left.substring(1, left.length() - 1);
+                    String[] parts = inner.split(",");
+                    if (parts.length == 2) {
+                        requireImport("java.util.function.BiFunction");
+                        String a = resolveDeclaredTypeForGenerics(parts[0], ValueType.ANY);
+                        String b = resolveDeclaredTypeForGenerics(parts[1], ValueType.ANY);
+                        return "BiFunction<" + a + ", " + b + ", " + ret + ">";
+                    } else if (parts.length == 0) {
+                        requireImport("java.util.function.Supplier");
+                        return "Supplier<" + ret + ">";
+                    } else {
+                        // Fallback: treat as Function of first arg
+                        requireImport("java.util.function.Function");
+                        String a = resolveDeclaredTypeForGenerics(parts[0], ValueType.ANY);
+                        return "Function<" + a + ", " + ret + ">";
+                    }
+                } else {
+                    requireImport("java.util.function.Function");
+                    String a = resolveDeclaredTypeForGenerics(left, ValueType.ANY);
+                    return "Function<" + a + ", " + ret + ">";
+                }
+            }
+            return switch (trimmed.toLowerCase()) {
+                case "int" -> "Integer";
+                case "float", "double" -> "Double";
+                case "string" -> "String";
+                case "boolean" -> "Boolean";
+                case "any" -> "Object";
+                default -> typeNameMappings.getOrDefault(trimmed, capitalize(trimmed));
+            };
+        }
+
+        List<String> methodParameterTypesFor(FunctionalInterfaceDescriptor descriptor, List<Parameter> params) {
+            List<String> types = new ArrayList<>(params.size());
+            if (descriptor.primitiveDouble()) {
+                for (int i = 0; i < params.size(); i++) {
+                    types.add("double");
+                }
+                return types;
+            }
+            for (Parameter p : params) {
+                String literal = p.typeLiteral();
+                ValueType vt = defaultType(p.type());
+                String ref = resolveDeclaredTypeForGenerics(literal, vt);
+                types.add(ref);
+            }
+            return types;
+        }
+
         String reserveLetName(String original) {
             String sanitized = makeUnique(original);
             reservedNames.add(sanitized);
@@ -1020,6 +1235,20 @@ public final class Visitor {
             for (String param : params) {
                 String unique = makeUnique(param);
                 scope.put(param, unique, null);
+                sanitized.add(unique);
+            }
+            return sanitized;
+        }
+
+        List<String> registerLambdaParamsWithTypes(List<String> params, List<ValueType> types) {
+            Scope scope = scopes.peek();
+            List<String> sanitized = new ArrayList<>(params.size());
+            for (int i = 0; i < params.size(); i++) {
+                String original = params.get(i);
+                String unique = makeUnique(original);
+                ValueType t = (types != null && i < types.size()) ? defaultType(types.get(i)) : null;
+                ResolvedType rt = (t == null) ? null : ResolvedType.scalar(t.javaName(), t);
+                scope.put(original, unique, rt);
                 sanitized.add(unique);
             }
             return sanitized;
@@ -1226,7 +1455,7 @@ public final class Visitor {
                     .map(Parameter::name)
                     .collect(Collectors.toList());
                 Operation body = optimizeOperation(fun.body(), new LambdaContext(params));
-                return new FunStatement(fun.name(), fun.parameters(), fun.returnType(), body, fun.comment());
+                return new FunStatement(fun.name(), fun.parameters(), fun.returnType(), fun.returnTypeLiteral(), body, fun.comment());
             }
             if (stmt instanceof PrintStatement print) {
                 Operation value = optimizeOperation(print.value(), lambdaCtx);

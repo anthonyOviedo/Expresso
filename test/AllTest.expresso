@@ -93,33 +93,22 @@ Prueban que match se transpila correctamente a Java y funciona correctamente en
 conjunción con data y ^ .
 */
 
+
 data shape = {
     Circle(radius:float),
     Rectangle(length:float, width:float)
 }
 
-
-fun shape_type(s:shape):string =
-    match s {
-        case Circle(r) => "its a Circle",
-        case Rectangle(l, w) => "its a Rectangle"
-    }
-
-
-fun area(s:shape):float =
-    match s {
-        case Circle(r) => 2 * r * 3.14,
-        case Rectangle(l, w) => l * w
-    }
-
+let shape_type = s:shape -> match s with 
+         Circle(r) -> "its a Circle"
+        | Rectangle(l, w) -> "its a Rectangle"
+    
 let c = ^Circle(5.0)
 let r = ^Rectangle(3.0, 4.0)
 
 print(c)
 print(r)
 
-print(shape_type(c))
-print(shape_type(r))
+print(shape_type(c)) // >>"its a Circle"
+print(shape_type(r)) // >>"its a Rectangle"
 
-print(area(c))
-print(area(r))

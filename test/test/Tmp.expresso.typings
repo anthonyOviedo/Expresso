@@ -1,0 +1,7 @@
+# Tmp.expresso
+shape_type: ~
+c: ~
+r: ~
+shape: Circle|Rectangle
+Circle: float ^ shape
+Rectangle: float, float ^ shape

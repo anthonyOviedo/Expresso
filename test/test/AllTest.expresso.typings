@@ -12,6 +12,7 @@ AND: ~
 XOR: ~
 foo: int
 p1: ~
+shape_type: ~
 c: ~
 r: ~
 person: person

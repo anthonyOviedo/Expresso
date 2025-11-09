@@ -81,6 +81,7 @@ public final class Ast {
             String name,
             List<Parameter> parameters,
             ValueType returnType,
+            String returnTypeLiteral,
             Operation body,
             String comment) implements Statement {
         public FunStatement {
@@ -92,7 +93,7 @@ public final class Ast {
         }
     }
 
-    public static record Parameter(String name, ValueType type) {
+    public static record Parameter(String name, ValueType type, String typeLiteral) {
         public Parameter {
             Objects.requireNonNull(name);
             Objects.requireNonNull(type);
@@ -118,7 +119,7 @@ public final class Ast {
         }
     }
 
-    public static record LambdaParam(String name, ValueType type) {
+    public static record LambdaParam(String name, ValueType type, String typeLiteral) {
         public LambdaParam {
             Objects.requireNonNull(name);
         }

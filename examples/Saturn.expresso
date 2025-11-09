@@ -35,8 +35,8 @@ fun length(a:list) = match a with
 	
 fun copy(a:list) = match a with
     Nil -> a 
-	Cons(f, r) -> ^Cons(f, copy(r))
-	
+  | Cons(f, r) -> ^Cons(f, copy(r))
+
 fun append(a:list, b:list) = match a with
       Nil -> b
     | Cons(f, r) -> ^Cons(f, append(r, b))
@@ -86,6 +86,5 @@ let myList_copy = copy(myList)
 
 print("myList copy =" + myList_copy)
 print("myList == myList_copy should be true?" + copy == myList_copy) 
-
 
 
