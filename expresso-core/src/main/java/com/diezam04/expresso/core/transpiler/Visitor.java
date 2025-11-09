@@ -281,6 +281,11 @@ public final class Visitor {
             }
         }
 
+        ValueType inferred = inferOperationType(cond, Collections.emptyMap(), context);
+        if (inferred == ValueType.BOOLEAN) {
+            return rendered;
+        }
+
         if ("true".equals(rendered) || "false".equals(rendered)) {
             return rendered;
         }
@@ -336,6 +341,8 @@ public final class Visitor {
                 yield "((" + targetType.javaName() + ") (" + value + "))";
             }
             case ANY -> "((" + targetType.javaName() + ") (" + value + "))";
+            case VOID -> "((" + targetType.javaName() + ") (" + value + "))";
+            default -> "((" + targetType.javaName() + ") (" + value + "))";
         };
     }
 
@@ -578,6 +585,9 @@ public final class Visitor {
         }
         if (op instanceof Call call) {
             if (call.callee() instanceof VarRef var) {
+                if ("print".equals(var.name())) {
+                    return ValueType.VOID;
+                }
                 ResolvedType resolved = context.lookupType(var.name());
                 if (resolved != null) {
                     return resolved.returnType();
@@ -788,7 +798,9 @@ public final class Visitor {
             String qualifiedName,
             String invocationMethod,
             boolean usesGenerics,
-            boolean primitiveDouble) {
+            boolean primitiveDouble,
+            boolean includeReturnType,
+            boolean invocationReturnsVoid) {
 
         String renderDeclaration(List<ValueType> params, ValueType returnType) {
             if (!usesGenerics) {
@@ -798,7 +810,9 @@ public final class Visitor {
             for (ValueType param : params) {
                 generics.add(param.boxedJavaName());
             }
-            generics.add(returnType.boxedJavaName());
+            if (includeReturnType) {
+                generics.add(returnType.boxedJavaName());
+            }
             return simpleName + "<" + String.join(", ", generics) + ">";
         }
 
@@ -817,20 +831,25 @@ public final class Visitor {
         }
 
         String methodReturnType(ValueType returnType) {
+            if (invocationReturnsVoid) {
+                return "void";
+            }
             return primitiveDouble ? "double" : returnType.boxedJavaName();
         }
     }
 
     private static final FunctionalInterfaceDescriptor FUNCTION =
-        new FunctionalInterfaceDescriptor("Function", "java.util.function.Function", "apply", true, false);
+        new FunctionalInterfaceDescriptor("Function", "java.util.function.Function", "apply", true, false, true, false);
     private static final FunctionalInterfaceDescriptor BIFUNCTION =
-        new FunctionalInterfaceDescriptor("BiFunction", "java.util.function.BiFunction", "apply", true, false);
+        new FunctionalInterfaceDescriptor("BiFunction", "java.util.function.BiFunction", "apply", true, false, true, false);
     private static final FunctionalInterfaceDescriptor SUPPLIER =
-        new FunctionalInterfaceDescriptor("Supplier", "java.util.function.Supplier", "get", true, false);
+        new FunctionalInterfaceDescriptor("Supplier", "java.util.function.Supplier", "get", true, false, true, false);
     private static final FunctionalInterfaceDescriptor DOUBLE_UNARY =
-        new FunctionalInterfaceDescriptor("DoubleUnaryOperator", "java.util.function.DoubleUnaryOperator", "applyAsDouble", false, true);
+        new FunctionalInterfaceDescriptor("DoubleUnaryOperator", "java.util.function.DoubleUnaryOperator", "applyAsDouble", false, true, true, false);
     private static final FunctionalInterfaceDescriptor DOUBLE_BINARY =
-        new FunctionalInterfaceDescriptor("DoubleBinaryOperator", "java.util.function.DoubleBinaryOperator", "applyAsDouble", false, true);
+        new FunctionalInterfaceDescriptor("DoubleBinaryOperator", "java.util.function.DoubleBinaryOperator", "applyAsDouble", false, true, true, false);
+    private static final FunctionalInterfaceDescriptor CONSUMER =
+        new FunctionalInterfaceDescriptor("Consumer", "java.util.function.Consumer", "accept", true, false, false, true);
 
     private static FunctionalInterfaceDescriptor selectDescriptor(List<ValueType> params, ValueType returnType) {
         int arity = params.size();
@@ -845,6 +864,9 @@ public final class Visitor {
             if (arity == 2) {
                 return DOUBLE_BINARY;
             }
+        }
+        if (returnType == ValueType.VOID && arity == 1) {
+            return CONSUMER;
         }
         return switch (arity) {
             case 1 -> FUNCTION;

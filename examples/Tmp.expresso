@@ -1,0 +1,34 @@
+/*
+ Drafts for test cases and demo 11/06/2025
+ loriacarlos@gmail.com
+ 
+ Warnings: 
+	* They could have some syntax issues (I haven't checked it)
+	* They might be very much "involved" (beyond Earth?)
+ In this file only TC3 and TC4 type examples
+ 
+*/
+
+data list = {
+	Nil,
+	Cons(car:any, cdr:list)
+}
+
+data shape = {
+    Circle(radius:float),
+    Rectangle(length:float, width:float)
+}
+
+let shape_type = s:shape -> match a with 
+         Circle(r) => "its a Circle"
+        | Rectangle(l, w) => "its a Rectangle"
+    
+let c = ^Circle(5.0)
+let r = ^Rectangle(3.0, 4.0)
+
+print(c)
+print(r)
+
+print(shape_type(c))
+print(shape_type(r))
+

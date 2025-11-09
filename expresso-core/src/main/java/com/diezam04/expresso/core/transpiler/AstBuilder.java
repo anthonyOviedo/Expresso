@@ -123,7 +123,7 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
 
     @Override
     public Object visitEulerFloat(ExprParser.EulerFloatContext ctx) {
-        return new Real(parseEulerLiteral(ctx.FLOAT_E().getText()));
+        return new Real(Double.parseDouble(ctx.FLOAT_E().getText()));
     }
 
     @Override
@@ -358,14 +358,6 @@ public final class AstBuilder extends ExprBaseVisitor<Object> {
 
     private static ValueType parseValueType(ExprParser.TypeRefContext ctx) {
         return ValueType.fromLiteral(ctx.getText());
-    }
-
-    private static double parseEulerLiteral(String literal) {
-        String base = literal.substring(0, literal.length() - 1); // strip trailing 'e'
-        if (base.endsWith(".")) {
-            base = base + "0";
-        }
-        return Double.parseDouble(base) * Math.E;
     }
 
     private static String decodeString(String literal) {

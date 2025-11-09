@@ -1,4 +1,0 @@
-# Test.expresso
-MyList: Cons|Nil
-Cons: int, MyList ^ MyList
-Nil: void ^ MyList

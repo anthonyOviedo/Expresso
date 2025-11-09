@@ -29,7 +29,7 @@ https://expresso.tonyspublic.info/
 
 ## Generar ejecutable `.exe` (Windows)
 
-El pipeline de CI usa [`jpackage`](https://docs.oracle.com/en/java/javase/23/jpackage/) para producir un ejecutable de Windows a partir del **CLI**. Estos pasos replican el job `cli-installer-exe` en tu entorno local.
+El pipeline de CI usa [`jpackage`](https://docs.oracle.com/en/java/javase/23/jpackage/) para producir un ejecutable de Windows.
 
 ### Requisitos
 - **Windows 10/11** con PowerShell.
@@ -42,10 +42,10 @@ Verifica que `java`, `mvn` y `jpackage` estén en el `PATH` antes de continuar.
 
 ### PASOS PARA USO DE EXPRESSO (CMD o PowerShell)
 
-# Nota: Ubicarse en la Raíz del Proyecto
+#### Nota: Ubicarse en la Raíz del Proyecto
 
-
-CMD
+### CMD
+```CMD
 
 # 1. Restaurar dependencias y compilar los módulos
 
@@ -76,7 +76,11 @@ mvn -B -DskipTests clean package
 
 
 
-Powershell
+
+```
+### PowerShell
+
+```powershell
 
 # 1. Restaurar dependencias y compilar los módulos
 
@@ -109,8 +113,11 @@ mvn -B -DskipTests clean package
   --dest "dist"
 
 
+```
 
-El ejecutable generado puede ser invocado con `expressor`.
+
+
+El ejecutable generado puede ser invocado con ".\dist\expressor\expressor" desde la raíz del proyecto.
 
 
 ## Uso basico del CLI `expressor`
@@ -130,3 +137,4 @@ expressor run examples/HelloWorld0.expresso
 # -> Transpila, compila y ejecuta la clase resultante
 ```
 ---
+#

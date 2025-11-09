@@ -1,0 +1,40 @@
+/*
+ Drafts for test cases and demo 11/06/2025
+ loriacarlos@gmail.com
+ 
+ Warnings: 
+	* They could have some syntax issues (I haven't checked it)
+	* They might be very much "involved" (far beyond Earth?)
+	
+ In this file only TC3 and TC4 type examples
+ 
+*/
+
+data list = {
+	Nil,
+	Cons(car:any, cdr:list)
+}
+
+let nil = ^Nil()
+
+let list_666 = ^Cons(666, nil)
+
+let list_777 = ^Cons(777, list_666)
+
+let list_888 = ^Cons(888, list_777)
+
+let myList = list_888
+
+/*
+  Potential Issues
+  * identifier a in case
+  * Type of f is UnaryOperator<Any>.
+  * method is .apply
+*/
+
+
+fun map(f:any -> any, a:list):list = match a with
+       Nil -> a 
+	|  Cons(first, rest) -> ^Cons(f(first), map(f, rest))
+	
+print("myList mapped" + map(x:any -> x:int + 1, myList) )

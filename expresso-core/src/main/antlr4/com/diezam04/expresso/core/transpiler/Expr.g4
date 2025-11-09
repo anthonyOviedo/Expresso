@@ -137,11 +137,11 @@ lambdaParam
 PRINT: [Pp][Rr][Ii][Nn][Tt];
 ID: [a-zA-Z_] [a-zA-Z_0-9]*;
 FLOAT_E
-    : (DIGITS '.' DIGITS* | DIGITS '.' | DIGITS | '.' DIGITS) 'e'
+    : (DIGITS ('.' DIGITS*)? | '.' DIGITS+) [eE] [+\-]? DIGITS
     ;
 FLOAT
-    : DIGITS '.' DIGITS* EXPONENT?
-    | '.' DIGITS EXPONENT?
+    : DIGITS '.' DIGITS* ([eE] [+\-]? DIGITS)?
+    | '.' DIGITS+ ([eE] [+\-]? DIGITS)?
     ;
 INT: DIGITS;
 STRING: '"' ( '\\' [btnr"\\] | ~["\\\r\n] )* '"';

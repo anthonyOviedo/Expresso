@@ -1,0 +1,91 @@
+/*
+ Drafts for test cases and demo 11/06/2025
+ loriacarlos@gmail.com
+ 
+ Warnings: 
+	* They could have some syntax issues (I haven't checked it)
+	* They might be very much "involved" (beyond Earth?)
+ In this file only TC3 and TC4 type examples
+ 
+*/
+
+data list = {
+	Nil,
+	Cons(car:any, cdr:list)
+}
+/*
+  Potential issues 
+  none
+  underscore pattern
+  Nil pattern is Nil() in Java
+  
+*/
+let first = a:list -> match a with
+      Nil -> none 
+    | Cons(f, _) -> f
+	
+let rest = a:list -> match a with
+      Nil -> none
+    | Cons(_, r) -> r
+
+fun length(a:list) = match a with
+      Nil -> 0
+    | Cons(_, r) -> 1 + length(r)
+	
+	
+fun copy(a:list) = match a with
+    Nil -> a 
+	Cons(f, r) -> ^Cons(f, copy(r))
+	
+fun append(a:list, b:list) = match a with
+      Nil -> b
+    | Cons(f, r) -> ^Cons(f, append(r, b))
+	
+
+/*
+ Potential issues
+ Type is BinaryOperator<list>
+ 
+*/
+let append_as_lambda = (a:list, b:list) -> append(a, b)
+
+/*
+ Potential issues
+ * Type is BinaryOperator<list>
+ * Method is append_as_lambda.apply
+ 
+*/
+let double_list = a:list -> append_as_lambda(a, a)
+
+//////////////////////////////////////////////////
+let nil = ^Nil()
+
+let list_666 = ^Cons(666, nil)
+
+let list_777 = ^Cons(777, list_666)
+
+let list_888 = ^Cons(888, list_777)
+
+let myList = list_888
+
+
+// Tests
+
+print("myList=" + myList)
+
+print("myList first=" + first(myList)) 
+
+print("myList rest=" + rest(myList)) 
+
+print("myList length=" + length(myList)) 
+
+print("myList twice =" + double_list(myList))
+
+
+let myList_copy = copy(myList)
+
+print("myList copy =" + myList_copy)
+print("myList == myList_copy should be true?" + copy == myList_copy) 
+
+
+

@@ -199,7 +199,8 @@ public final class Ast {
         FLOAT("double", "Double"),
         STRING("String", "String"),
         BOOLEAN("boolean", "Boolean"),
-        ANY("Object", "Object");
+        ANY("Object", "Object"),
+        VOID("void", "Void");
 
         private final String javaRepresentation;
         private final String boxedRepresentation;
@@ -258,6 +259,9 @@ public final class Ast {
             }
             if ("any".equalsIgnoreCase(literal)) {
                 return ANY;
+            }
+            if ("void".equalsIgnoreCase(literal)) {
+                return VOID;
             }
             return ANY;
         }

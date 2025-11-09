@@ -1,0 +1,96 @@
+/*
+ Drafts for test cases and demo 11/06/2025
+ loriacarlos@gmail.com
+ Warnings: 
+	* They could have some syntax issues (I haven't checked it)
+	* They might be very much "involved" (beyond Earth?)
+ 
+ In this file only TC1 and TC2 type examples
+ 
+*/
+
+////////////// TC1 /////////////////
+
+/*
+
+  Repeats a string n-times using a recursive two-parameters fun
+  Uses == 
+  Potential Issue two-parameters type
+  
+  Define a Lambda (recognize type Function<Integer, String> and generate .apply)
+  
+*/
+
+fun fill(n:int, s:string):string = n == 0 ? "" : ( s + fill(n - 1, s) )
+
+print(fill(80, "-"))
+
+
+/*
+  Potential issues:
+  * Defines a lambda of type Function<Integer, String>
+  * Generate line.apply
+*/
+let line = n -> fill(n, "_") + "\n"
+print(line(80))
+
+/*
+* Defines a lambda returning 'void'; recognize type as a Consumer<Integer>
+* Generate .accept)
+*/
+let print_line = (n:int) -> print( line(n) )
+
+// Call it. Potential Issue: generate as Cosumer<Integer> type and .accept 
+print_line(80) // print_line.accept(80)
+
+// Potential Issue: String concat "+"
+print("The only " + true + " answer to the meaning of life is: " + (1 + 666 / 666 + 20 * 2))
+print_line(80)
+
+/////////////// TC2 //////////////////
+
+print("*** Newton-Raphson TC2 **** ")
+
+let abs = x:float -> x >= 0 ? x : -x // Uses >= and unary -
+//  Potential issue: type is UnaryOperator<Double> and method is apply
+print("Test abs:" + (abs((-666):float) == abs((--666):float)) )
+
+let EPSILON =  1e-11 // Fully uppercased id. Issue floating-point using scientific notation
+print("EPSILON="  + EPSILON)
+
+let improve = (a:float, x:float) -> 0.5 * (x + a / x) // BinaryOperator<Double> .apply
+
+/* 
+  Potential Issues: 
+  Type is BiPredicate<Double>
+  abs --> abs.apply
+  
+*/
+let converges = (a:float, x:float) -> abs(x ** 2 - a) < EPSILON
+
+
+/* 
+  Potential Issues: 
+  Type is BinaryOperator<Double>
+  converges --> converges.test
+  
+*/
+
+let next = (a:float, x:float) -> converges(a, x) ? x : improve(a, x)
+
+/*
+ Potential Issues:
+ converges --> converges.test
+ 
+*/
+
+fun sqrt_iterate(a:float, x0:float):float = converges(a, x0) ? x0 : sqrt_iterate(a, improve(a, x0))
+
+fun sqrt(a:float) = sqrt_iterate(a, a * 0.5)
+
+let test_sqrt = a:float -> a + " -sqrt-> " + sqrt(a)
+print(test_sqrt(4))
+print(sqrt(4) ** 2 + " ==? " + 4.0)
+print(sqrt(2)  + " ==? " + 1.4142135623730951)
+
+//////////////////////////////
