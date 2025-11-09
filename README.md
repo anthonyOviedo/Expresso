@@ -58,11 +58,13 @@ mvn -B -DskipTests clean package
 
 # 2. Generar Ejecutable de Expresso en carpeta Dist
 
-
+#    2.1. Generar Runtime  
 "%JAVA_HOME%\bin\jlink.exe" ^
   --module-path "%JAVA_HOME%\jmods" ^
   --add-modules java.base,java.logging,java.scripting,java.desktop,jdk.compiler ^
   --output "runtime"
+
+#    2.2. Generar Ejecutable en carpeta Dist
 "%JAVA_HOME%\bin\jpackage.exe" ^
   --type app-image ^
   --name expressor ^
